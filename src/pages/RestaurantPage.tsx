@@ -25,7 +25,7 @@ export function RestaurantPage() {
     queryFn: () => fetchReviews(id!),
     enabled: !!id,
   })
-  const { data: cats = [] } = useQuery({
+  const { data: allCats = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
   })
@@ -35,6 +35,8 @@ export function RestaurantPage() {
     : 0
 
   if (!restaurant) return <LoadingState />
+
+  const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant.food_type)
 
   const hasReviewed = reviews.some(r => r.user_id === name)
 
