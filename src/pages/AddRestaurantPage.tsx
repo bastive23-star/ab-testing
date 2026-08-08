@@ -190,7 +190,7 @@ export function AddRestaurantPage() {
             {/* Address autocomplete */}
             <div className="relative">
               <Input
-                label="Adresse *"
+                label="Adresse"
                 placeholder="z.B. Sendlinger Str. 1"
                 value={form.address}
                 onChange={set('address')}
@@ -217,7 +217,7 @@ export function AddRestaurantPage() {
           </GlassCard>
         </motion.div>
 
-        <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} disabled={!form.name || !form.address} onClick={() => mut.mutate()}>
+        <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} disabled={!form.name} onClick={() => mut.mutate()}>
           Restaurant speichern
         </Button>
         {mut.isError && <p className="text-sm text-[#C8302A] text-center">{(mut.error as Error).message}</p>}
