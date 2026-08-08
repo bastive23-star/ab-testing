@@ -1,4 +1,4 @@
-const PASSWORD = 'banhmi25'
+const PASSWORD = 'banhmi26'
 const PW_KEY   = 'bmPw'
 const NAME_KEY = 'bmName'
 
