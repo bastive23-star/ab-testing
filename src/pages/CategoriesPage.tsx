@@ -26,7 +26,7 @@ export function CategoriesPage() {
   const totalWeight = cats.reduce((s, c) => s + c.weight, 0)
 
   const createMut = useMutation({
-    mutationFn: () => createCategory({ name: newName.trim(), weight: newWeight, emoji: newEmoji, created_by: user!.id }),
+    mutationFn: () => createCategory({ name: newName.trim(), weight: newWeight, emoji: newEmoji, created_by: user!.uid }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       setAdding(false); setNewName(''); setNewWeight(10)

@@ -35,7 +35,7 @@ export interface Review {
   visited_at: string
   created_at: string
   profiles?: Profile
-  restaurant?: Restaurant
+  restaurant?: Partial<Restaurant>
 }
 
 export interface Profile {

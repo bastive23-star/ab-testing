@@ -40,7 +40,7 @@ export function AddRestaurantPage() {
         google_maps_url: form.google_maps_url || null,
         website: form.website || null,
         cover_photo_url,
-        created_by: user.id,
+        created_by: user.uid,
       })
     },
     onSuccess: (r) => {

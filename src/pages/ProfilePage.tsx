@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { signOut } from 'firebase/auth'
+import { auth } from '../lib/firebase'
 import { fetchUserReviews } from '../lib/queries'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
@@ -15,8 +16,8 @@ export function ProfilePage() {
   const nav = useNavigate()
 
   const { data: reviews = [] } = useQuery({
-    queryKey: ['user-reviews', user?.id],
-    queryFn: () => fetchUserReviews(user!.id),
+    queryKey: ['user-reviews', user?.uid],
+    queryFn: () => fetchUserReviews(user!.uid),
     enabled: !!user,
   })
 
@@ -33,42 +34,31 @@ export function ProfilePage() {
     )
   }
 
-  const username = user.user_metadata?.username ?? user.email?.split('@')[0] ?? 'Gast'
+  const username = user.displayName ?? user.email?.split('@')[0] ?? 'Gast'
   const avgScore = reviews.length ? reviews.reduce((s, r) => s + r.total_score, 0) / reviews.length : 0
 
   return (
     <div className="px-4 pt-12 pb-4 max-w-xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        {/* Profile header */}
         <GlassCard variant="strong" className="p-5 flex items-center gap-4">
-          <Avatar name={username} size="lg" />
+          <Avatar name={username} url={user.photoURL} size="lg" />
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-[#1A1714] text-lg leading-tight">{username}</h1>
             <p className="text-xs text-[#9E9791] truncate">{user.email}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => { await supabase.auth.signOut(); nav('/auth') }}
-          >
+          <Button variant="ghost" size="sm" onClick={async () => { await signOut(auth); nav('/auth') }}>
             Logout
           </Button>
         </GlassCard>
       </motion.div>
 
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-3 gap-3 mb-6"
-      >
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        className="grid grid-cols-3 gap-3 mb-6">
         <StatCard value={reviews.length} label="Reviews" />
         <StatCard value={avgScore > 0 ? avgScore.toFixed(1) : '—'} label="Ø Score" accent />
         <StatCard value={new Set(reviews.map(r => r.restaurant_id)).size} label="Orte" />
       </motion.div>
 
-      {/* Review history */}
       <div>
         <h2 className="font-semibold text-[#1A1714] mb-3 px-1">Meine Bewertungen</h2>
         {reviews.length === 0 ? (
@@ -79,20 +69,14 @@ export function ProfilePage() {
         ) : (
           <div className="space-y-2">
             {reviews.map((review, i) => (
-              <motion.div
-                key={review.id}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.06 }}
-              >
+              <motion.div key={review.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.06 }}>
                 <Link to={`/restaurant/${review.restaurant_id}`}>
                   <GlassCard hover className="p-3.5 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-[12px] overflow-hidden bg-[#EAE7E1] shrink-0">
-                      {(review.restaurant as { cover_photo_url?: string })?.cover_photo_url ? (
-                        <img src={(review.restaurant as { cover_photo_url: string }).cover_photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl">🥖</div>
-                      )}
+                      {(review.restaurant as { cover_photo_url?: string })?.cover_photo_url
+                        ? <img src={(review.restaurant as { cover_photo_url: string }).cover_photo_url} alt="" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center text-xl">🥖</div>
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm text-[#1A1714] truncate">

@@ -58,7 +58,7 @@ export function ReviewPage() {
       setUploading(false)
       await submitReview(
         restaurantId!,
-        user.id,
+        user.uid,
         Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])),
         cats,
         urls,

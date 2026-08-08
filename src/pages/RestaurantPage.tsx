@@ -36,7 +36,7 @@ export function RestaurantPage() {
 
   if (!restaurant) return <LoadingState />
 
-  const hasReviewed = reviews.some(r => r.user_id === user?.id)
+  const hasReviewed = reviews.some(r => r.user_id === user?.uid)
 
   return (
     <div className="pb-4">
