@@ -35,15 +35,14 @@ export function RestaurantPage() {
     ? reviews.reduce((s, r) => s + r.total_score, 0) / reviews.length
     : 0
 
-  if (!restaurant) return <LoadingState />
-
-  const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant.food_type)
-
   const seitanMut = useMutation({
-    mutationFn: (val: boolean) => toggleSeitan(restaurant.id, val),
+    mutationFn: (val: boolean) => toggleSeitan(restaurant?.id ?? '', val),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['restaurant', id] }),
   })
 
+  if (!restaurant) return <LoadingState />
+
+  const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant.food_type)
   const hasReviewed = reviews.some(r => r.user_id === name)
 
   return (
