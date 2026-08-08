@@ -4,29 +4,30 @@ import { Link } from 'react-router-dom'
 import L from 'leaflet'
 import { fetchRestaurantsWithStats } from '../lib/queries'
 import { scoreColor, scoreLabel } from '../lib/scoring'
-import { motion } from 'framer-motion'
 
 function createMarkerIcon(score: number, name: string) {
   const color = scoreColor(score)
-  const label = name.length > 16 ? name.slice(0, 15) + '…' : name
+  const label = name.length > 18 ? name.slice(0, 17) + '…' : name
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
-      <filter id="shadow">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.25)"/>
-      </filter>
-      <path d="M22 2C12.059 2 4 10.059 4 20c0 12 18 30 18 30S40 32 40 20C40 10.059 31.941 2 22 2z"
-        fill="${color}" filter="url(#shadow)"/>
-      <circle cx="22" cy="20" r="13" fill="rgba(255,255,255,0.95)"/>
-      <text x="22" y="24" text-anchor="middle" font-size="11" font-weight="700"
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+      <defs>
+        <filter id="s" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.22)"/>
+        </filter>
+      </defs>
+      <path d="M20 2C11.163 2 4 9.163 4 18c0 10.5 16 28 16 28S36 28.5 36 18C36 9.163 28.837 2 20 2z"
+        fill="${color}" filter="url(#s)"/>
+      <circle cx="20" cy="18" r="11" fill="white"/>
+      <text x="20" y="22" text-anchor="middle" font-size="9.5" font-weight="700"
         font-family="Inter,sans-serif" fill="${color}">${score.toFixed(1)}</text>
     </svg>
-    <div style="position:absolute;top:54px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:600;color:#1A1714;box-shadow:0 1px 6px rgba(0,0,0,0.18);border:1px solid rgba(0,0,0,0.06)">${label}</div>
+    <div style="position:absolute;top:50px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#FFFFFF;border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:600;color:#111110;box-shadow:0 2px 8px rgba(0,0,0,0.14);letter-spacing:-0.01em">${label}</div>
   `
   return L.divIcon({
     html: `<div style="position:relative">${svg}</div>`,
     className: '',
-    iconSize: [44, 52],
-    iconAnchor: [22, 52],
+    iconSize: [40, 48],
+    iconAnchor: [20, 48],
     popupAnchor: [0, -52],
   })
 }
@@ -38,36 +39,22 @@ export function MapPage() {
   })
 
   const withCoords = restaurants.filter(r => r.lat && r.lng)
-  // Munich center
   const center: [number, number] = [48.1351, 11.582]
 
   return (
     <div className="relative h-dvh flex flex-col">
-      {/* Header overlay */}
-      <div className="absolute top-0 inset-x-0 z-[1000] px-4 pt-12 pb-4 pointer-events-none">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="glass-strong rounded-[20px] px-5 py-3 pointer-events-auto inline-flex items-center gap-3"
-        >
-          <span className="text-2xl">📍</span>
-          <div>
-            <h1 className="font-serif text-[#1A1714] text-base leading-tight">München</h1>
-            <p className="text-xs text-[#9E9791]">{withCoords.length} Locations</p>
-          </div>
-        </motion.div>
-      </div>
-
       <MapContainer
         center={center}
         zoom={13}
         className="flex-1 z-0"
         style={{ height: '100dvh' }}
+        zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
         />
         {withCoords.map((r) => (
           <Marker
@@ -75,20 +62,20 @@ export function MapPage() {
             position={[r.lat!, r.lng!]}
             icon={createMarkerIcon(r.avg_score, r.name)}
           >
-            <Popup>
+            <Popup className="clean-popup">
               <Link to={`/restaurant/${r.id}`} className="block no-underline">
-                <div className="flex items-center gap-3 min-w-[180px]">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#EAE7E1]">
+                <div className="flex items-center gap-3" style={{ minWidth: 200, padding: '4px 0' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#F0EEE8' }}>
                     {r.cover_photo_url
-                      ? <img src={r.cover_photo_url} alt={r.name} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-xl">🥖</div>
+                      ? <img src={r.cover_photo_url} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🥖</div>
                     }
                   </div>
-                  <div>
-                    <p className="font-semibold text-[#1A1714] text-sm leading-tight">{r.name}</p>
-                    <p className="text-xs text-[#9E9791] mt-0.5">{r.neighborhood}</p>
-                    <p className="text-xs font-semibold mt-1" style={{ color: scoreColor(r.avg_score) }}>
-                      {r.avg_score.toFixed(1)} · {scoreLabel(r.avg_score)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: '#111110', lineHeight: 1.3, margin: 0 }}>{r.name}</p>
+                    {r.neighborhood && <p style={{ fontSize: 11, color: '#9B9894', margin: '2px 0 0' }}>{r.neighborhood}</p>}
+                    <p style={{ fontSize: 12, fontWeight: 700, margin: '4px 0 0', color: scoreColor(r.avg_score) }}>
+                      {r.avg_score.toFixed(1)} <span style={{ fontWeight: 400, color: '#9B9894' }}>— {scoreLabel(r.avg_score)}</span>
                     </p>
                   </div>
                 </div>

@@ -23,19 +23,16 @@ export function RankingPage() {
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
   const reviewers = [...new Set(allReviews.map(r => r.user_id))].sort()
 
-  // If reviewer selected: compute per-reviewer scores
   const restaurantList = (() => {
     let list = foodFilter ? restaurants.filter(r => r.food_type === foodFilter) : restaurants
 
     if (reviewer) {
       const myReviews = allReviews.filter(r => r.user_id === reviewer)
-      const myScoreMap: Record<string, { score: number; count: number }> = {}
-      for (const rev of myReviews) {
-        myScoreMap[rev.restaurant_id] = { score: rev.total_score, count: 1 }
-      }
+      const myScoreMap: Record<string, number> = {}
+      for (const rev of myReviews) myScoreMap[rev.restaurant_id] = rev.total_score
       list = list
-        .filter(r => myScoreMap[r.id])
-        .map(r => ({ ...r, avg_score: myScoreMap[r.id].score, review_count: 1 }))
+        .filter(r => myScoreMap[r.id] !== undefined)
+        .map(r => ({ ...r, avg_score: myScoreMap[r.id], review_count: 1 }))
         .sort((a, b) => b.avg_score - a.avg_score)
     }
 
@@ -46,18 +43,25 @@ export function RankingPage() {
     <div className="px-5 pt-14 pb-4 max-w-xl mx-auto">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5 }}
         className="mb-8"
       >
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#9B9894] mb-2">München</p>
-        <h1 className="font-serif text-5xl text-[#111110] leading-[1.05]">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-[3px] h-7 bg-[#C8302A] rounded-full" />
+          <p className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#9B9894]">
+            München · Food Rankings
+          </p>
+        </div>
+        <h1 className="font-serif leading-[0.88] text-[#111110]" style={{ fontSize: 'clamp(52px, 15vw, 72px)' }}>
           A/B<br />Testing
         </h1>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-px flex-1 bg-[#E8E6E0]" />
-          <span className="text-xs text-[#9B9894]">{restaurantList.length} Restaurants</span>
+        <div className="mt-5 flex items-center gap-3">
+          <div className="h-[1.5px] flex-1 bg-[#111110]" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9B9894]">
+            {restaurantList.length} im Ranking
+          </span>
         </div>
       </motion.div>
 
@@ -66,10 +70,9 @@ export function RankingPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-2 mb-7"
+          transition={{ delay: 0.15 }}
+          className="space-y-2.5 mb-8"
         >
-          {/* Food type */}
           {foodTypes.length > 1 && (
             <div className="flex flex-wrap gap-1.5">
               {[null, ...foodTypes].map(t => (
@@ -77,10 +80,10 @@ export function RankingPage() {
                   key={t ?? 'alle'}
                   onClick={() => setFoodFilter(t)}
                   className={cn(
-                    'px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                    'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
                     foodFilter === t
-                      ? 'bg-[#111110] text-white border-[#111110]'
-                      : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
+                      ? 'bg-[#111110] text-white'
+                      : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
                   )}
                 >
                   {t ?? 'Alle'}
@@ -89,19 +92,18 @@ export function RankingPage() {
             </div>
           )}
 
-          {/* Reviewer */}
           {reviewers.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              <span className="text-[10px] uppercase tracking-wider text-[#9B9894] self-center mr-1">Von</span>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-[9px] uppercase tracking-[0.2em] text-[#B8B5B0] font-semibold">Von</span>
               {[null, ...reviewers].map(r => (
                 <button
                   key={r ?? 'alle'}
                   onClick={() => setReviewer(r)}
                   className={cn(
-                    'px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                    'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
                     reviewer === r
-                      ? 'bg-[#C8302A] text-white border-[#C8302A]'
-                      : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
+                      ? 'bg-[#C8302A] text-white'
+                      : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
                   )}
                 >
                   {r ?? 'Allen'}
@@ -122,52 +124,69 @@ export function RankingPage() {
           {restaurantList.map((r, i) => (
             <motion.div
               key={r.id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.05 }}
+              transition={{ duration: 0.3, delay: i * 0.045 }}
             >
               <Link to={`/restaurant/${r.id}`} className="block group">
-                <div className="py-4 flex items-start gap-4">
-                  <span className="font-serif text-5xl leading-none text-[#E8E6E0] group-hover:text-[#D0CEC8] transition-colors shrink-0 w-14 text-right">
+                <div className="py-5 flex items-start gap-4">
+                  {/* Rank */}
+                  <span className="font-serif leading-none text-[#ECEAE4] group-hover:text-[#D8D5CF] transition-colors shrink-0 w-12 text-right tabular-nums select-none"
+                    style={{ fontSize: 44 }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <div className="flex-1 min-w-0 pt-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="font-serif text-xl text-[#111110] leading-tight group-hover:text-[#C8302A] transition-colors truncate">
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 pt-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-[#9B9894] mb-1">
+                          {r.food_type}
+                        </p>
+                        <h2 className="font-serif text-[22px] leading-tight text-[#111110] group-hover:text-[#C8302A] transition-colors truncate">
                           {r.name}
                         </h2>
-                        <p className="text-xs text-[#9B9894] mt-0.5">
-                          {r.neighborhood || r.food_type}
-                          {r.review_count > 0 && ` · ${r.review_count} ${r.review_count === 1 ? 'Review' : 'Reviews'}`}
-                        </p>
+                        {(r.neighborhood || r.review_count > 0) && (
+                          <p className="text-xs text-[#9B9894] mt-1 leading-none">
+                            {r.neighborhood || ''}
+                            {r.neighborhood && r.review_count > 0 && ' · '}
+                            {r.review_count > 0 && `${r.review_count} ${r.review_count === 1 ? 'Review' : 'Reviews'}`}
+                          </p>
+                        )}
                       </div>
-                      <div className="shrink-0 text-right">
+
+                      {/* Score */}
+                      <div className="shrink-0 text-right pt-0.5">
                         <span
-                          className="font-serif text-2xl leading-none tabular-nums"
-                          style={{ color: r.avg_score > 0 ? scoreColor(r.avg_score) : '#9B9894' }}
+                          className="font-serif leading-none tabular-nums"
+                          style={{ fontSize: 32, color: r.avg_score > 0 ? scoreColor(r.avg_score) : '#D5D3CE' }}
                         >
                           {r.avg_score > 0 ? r.avg_score.toFixed(1) : '—'}
                         </span>
                         {i === 0 && r.avg_score > 0 && (
-                          <p className="text-[9px] uppercase tracking-widest text-[#C8302A] mt-0.5">#1</p>
+                          <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#C8302A] mt-1">#1</p>
                         )}
                       </div>
                     </div>
+
+                    {/* Score bar */}
                     {r.avg_score > 0 && (
-                      <div className="mt-2.5 h-px bg-[#E8E6E0] overflow-hidden">
+                      <div className="mt-3.5 h-[1.5px] bg-[#EDEBE5] overflow-hidden rounded-full">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${(r.avg_score / 10) * 100}%` }}
-                          transition={{ duration: 0.8, delay: 0.2 + i * 0.05, ease: [0.4, 0, 0.2, 1] }}
-                          className="h-full"
+                          transition={{ duration: 0.9, delay: 0.25 + i * 0.04, ease: [0.4, 0, 0.2, 1] }}
+                          className="h-full rounded-full"
                           style={{ background: scoreColor(r.avg_score) }}
                         />
                       </div>
                     )}
                   </div>
                 </div>
-                {i < restaurantList.length - 1 && <div className="h-px bg-[#F0EEE8] ml-18" />}
+
+                {i < restaurantList.length - 1 && (
+                  <div className="h-px bg-[#F2F0EA] ml-16" />
+                )}
               </Link>
             </motion.div>
           ))}
@@ -179,16 +198,17 @@ export function RankingPage() {
 
 function SkeletonList() {
   return (
-    <div>
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="py-4 flex items-start gap-4 animate-pulse">
-          <div className="w-14 h-10 rounded bg-[#F0EEE8]" />
-          <div className="flex-1 space-y-2 pt-1">
-            <div className="h-5 w-2/3 rounded bg-[#F0EEE8]" />
-            <div className="h-3 w-1/3 rounded bg-[#F0EEE8]" />
-            <div className="h-px w-full bg-[#F0EEE8]" />
+    <div className="space-y-0">
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i} className="py-5 flex items-start gap-4 animate-pulse">
+          <div className="w-12 h-10 rounded bg-[#F0EEE8] shrink-0" />
+          <div className="flex-1 space-y-2 pt-1.5">
+            <div className="h-2.5 w-16 rounded-full bg-[#F0EEE8]" />
+            <div className="h-6 w-2/3 rounded bg-[#F0EEE8]" />
+            <div className="h-2 w-1/3 rounded-full bg-[#F0EEE8]" />
+            <div className="h-px w-full bg-[#F0EEE8] mt-3" />
           </div>
-          <div className="w-10 h-7 rounded bg-[#F0EEE8]" />
+          <div className="w-10 h-8 rounded bg-[#F0EEE8] shrink-0 mt-1.5" />
         </div>
       ))}
     </div>
@@ -197,9 +217,9 @@ function SkeletonList() {
 
 function EmptyState() {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center">
-      <p className="font-serif text-4xl text-[#E8E6E0] mb-4">—</p>
-      <p className="text-sm text-[#9B9894]">Keine Einträge</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 text-center">
+      <p className="font-serif text-5xl text-[#ECEAE4] mb-3">—</p>
+      <p className="text-sm text-[#9B9894]">Keine Einträge gefunden</p>
     </motion.div>
   )
 }

@@ -82,36 +82,77 @@ export function RestaurantPage() {
 
       <div className="px-4 pt-4 space-y-4 max-w-xl mx-auto">
         {/* Info card */}
-        <GlassCard className="p-4 space-y-3">
-          {restaurant.address && (
-            <Row icon="📍" text={restaurant.address} />
+        <GlassCard className="overflow-hidden">
+          {/* Address / links */}
+          {(restaurant.address || restaurant.google_maps_url || restaurant.website) && (
+            <div className="divide-y divide-[#F2F1ED]">
+              {restaurant.address && (
+                <div className="flex items-start gap-3 px-4 py-3.5">
+                  <PinIcon className="mt-0.5 shrink-0 text-[#9B9894]" />
+                  <span className="text-sm text-[#6B6560] leading-snug">{restaurant.address}</span>
+                </div>
+              )}
+              {restaurant.google_maps_url && (
+                <a href={restaurant.google_maps_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F9F8F5] active:bg-[#F2F1ED] transition-colors">
+                  <MapPinIcon className="shrink-0 text-[#C8302A]" />
+                  <span className="text-sm font-medium text-[#C8302A] flex-1">Google Maps öffnen</span>
+                  <ArrowRightIcon className="text-[#C8302A] opacity-60" />
+                </a>
+              )}
+              {restaurant.website && (
+                <a href={restaurant.website} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[#F9F8F5] active:bg-[#F2F1ED] transition-colors">
+                  <GlobeIcon className="shrink-0 text-[#C8302A]" />
+                  <span className="text-sm font-medium text-[#C8302A] flex-1">Website besuchen</span>
+                  <ArrowRightIcon className="text-[#C8302A] opacity-60" />
+                </a>
+              )}
+            </div>
           )}
-          {restaurant.google_maps_url && (
-            <a href={restaurant.google_maps_url} target="_blank" rel="noopener noreferrer">
-              <Row icon="🗺️" text="In Google Maps öffnen" link />
-            </a>
-          )}
-          {restaurant.website && (
-            <a href={restaurant.website} target="_blank" rel="noopener noreferrer">
-              <Row icon="🌐" text="Website besuchen" link />
-            </a>
-          )}
-          {/* Seitan toggle */}
-          <button
-            onClick={() => seitanMut.mutate(!restaurant.has_seitan)}
-            className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl transition-all border ${
-              restaurant.has_seitan
-                ? 'bg-green-50 border-green-200 text-green-700'
-                : 'bg-[#F9F8F5] border-[#E8E6E0] text-[#9B9894]'
-            }`}
-          >
-            <span className="text-base">🌱</span>
-            <span className="text-sm font-medium flex-1">
-              {restaurant.has_seitan ? 'Seitan verfügbar' : 'Kein Seitan'}
-            </span>
-            <span className="text-xs">{restaurant.has_seitan ? '✓' : '+'}</span>
-          </button>
-          <div className="pt-1">
+
+          {/* Seitan toggle — big, bold, unmissable */}
+          <div className="p-3 pt-3">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              onClick={() => seitanMut.mutate(!restaurant.has_seitan)}
+              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 ${
+                restaurant.has_seitan
+                  ? 'bg-[#0B2911]'
+                  : 'bg-[#F2F1ED]'
+              }`}
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                restaurant.has_seitan ? 'bg-[#17421E]' : 'bg-[#E5E3DE]'
+              }`}>
+                <LeafIcon className={`transition-colors duration-300 ${restaurant.has_seitan ? 'text-emerald-400' : 'text-[#B8B5B0]'}`} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className={`font-semibold text-[15px] leading-tight transition-colors duration-300 ${
+                  restaurant.has_seitan ? 'text-white' : 'text-[#9B9894]'
+                }`}>
+                  {restaurant.has_seitan ? 'Seitan verfügbar' : 'Kein Seitan'}
+                </p>
+                <p className={`text-xs mt-1 transition-colors duration-300 ${
+                  restaurant.has_seitan ? 'text-emerald-400/70' : 'text-[#C0BDB8]'
+                }`}>
+                  {restaurant.has_seitan ? 'Pflanzliche Alternative ✓' : 'Tippen zum Ändern'}
+                </p>
+              </div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                restaurant.has_seitan ? 'bg-emerald-500/20' : 'bg-black/8'
+              }`}>
+                {restaurant.has_seitan
+                  ? <CheckIcon className="text-emerald-400" />
+                  : <PlusSmIcon className="text-[#9B9894]" />
+                }
+              </div>
+            </motion.button>
+          </div>
+
+          {/* Review CTA */}
+          <div className="px-3 pb-3">
             <Button
               variant="primary"
               size="lg"
@@ -223,13 +264,26 @@ export function RestaurantPage() {
   )
 }
 
-function Row({ icon, text, link }: { icon: string; text: string; link?: boolean }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="text-base mt-0.5">{icon}</span>
-      <span className={`text-sm ${link ? 'text-[#C8302A] underline-offset-2 hover:underline' : 'text-[#6B6560]'}`}>{text}</span>
-    </div>
-  )
+function PinIcon({ className }: { className?: string }) {
+  return <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+}
+function MapPinIcon({ className }: { className?: string }) {
+  return <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+}
+function GlobeIcon({ className }: { className?: string }) {
+  return <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+}
+function ArrowRightIcon({ className }: { className?: string }) {
+  return <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+}
+function LeafIcon({ className }: { className?: string }) {
+  return <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+}
+function CheckIcon({ className }: { className?: string }) {
+  return <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+}
+function PlusSmIcon({ className }: { className?: string }) {
+  return <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 }
 
 function LoadingState() {
