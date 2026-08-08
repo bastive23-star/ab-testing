@@ -34,7 +34,22 @@ export function ReviewPage() {
     enabled: !!restaurantId && !!name,
   })
 
-  const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant?.food_type)
+  const allFilteredCats = allCats.filter(c => c.food_type === null || c.food_type === restaurant?.food_type)
+
+  // Detect meat vs veg choice
+  const hasMeat = allFilteredCats.some(c => c.name === 'Fleisch')
+  const hasVeg  = allFilteredCats.some(c => c.name === 'Veg. Alternative')
+  const needsChoice = hasMeat && hasVeg
+
+  const [meatOrVeg, setMeatOrVeg] = useState<'fleisch' | 'veg' | null>(null)
+
+  const cats = needsChoice && meatOrVeg
+    ? allFilteredCats.filter(c => {
+        if (c.name === 'Fleisch') return meatOrVeg === 'fleisch'
+        if (c.name === 'Veg. Alternative') return meatOrVeg === 'veg'
+        return true
+      })
+    : allFilteredCats
 
   const [scores, setScores] = useState<Record<string, number>>({})
   const [notes, setNotes] = useState('')
@@ -47,6 +62,13 @@ export function ReviewPage() {
       setScores(existingReview.scores)
       setNotes(existingReview.notes ?? '')
       setVisitedAt(existingReview.visited_at ?? new Date().toISOString().split('T')[0])
+      // Detect previous choice from scores
+      const hadMeat = existingReview.scores && allFilteredCats.find(c => c.name === 'Fleisch') &&
+        existingReview.scores[allFilteredCats.find(c => c.name === 'Fleisch')!.id] !== undefined
+      const hadVeg = existingReview.scores && allFilteredCats.find(c => c.name === 'Veg. Alternative') &&
+        existingReview.scores[allFilteredCats.find(c => c.name === 'Veg. Alternative')!.id] !== undefined
+      if (hadMeat) setMeatOrVeg('fleisch')
+      else if (hadVeg) setMeatOrVeg('veg')
       setPrefilled(true)
     }
   }, [existingReview, prefilled])
@@ -112,7 +134,29 @@ export function ReviewPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <GlassCard className="p-4 space-y-5">
             <p className="text-xs font-semibold text-[#9B9894] uppercase tracking-wider">Kategorien</p>
-            {cats.map((cat, i) => (
+
+            {/* Meat or veg picker */}
+            {needsChoice && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-[#9B9894]">Was hast du gegessen?</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMeatOrVeg('fleisch')}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${meatOrVeg === 'fleisch' ? 'bg-[#111110] text-white border-[#111110]' : 'bg-white text-[#5C5B57] border-[#E8E6E0]'}`}
+                  >
+                    🥩 Fleisch
+                  </button>
+                  <button
+                    onClick={() => setMeatOrVeg('veg')}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${meatOrVeg === 'veg' ? 'bg-[#111110] text-white border-[#111110]' : 'bg-white text-[#5C5B57] border-[#E8E6E0]'}`}
+                  >
+                    🌱 Veggie
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(!needsChoice || meatOrVeg) && cats.map((cat, i) => (
               <motion.div key={cat.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 + i * 0.05 }}>
                 <RatingSlider label={cat.name} emoji={cat.emoji} value={scores[cat.id] ?? 5} onChange={v => setScores(p => ({ ...p, [cat.id]: v }))} />
               </motion.div>
@@ -167,7 +211,7 @@ export function ReviewPage() {
           </GlassCard>
         </motion.div>
 
-        <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} onClick={() => mut.mutate()}>
+        <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} disabled={needsChoice && !meatOrVeg} onClick={() => mut.mutate()}>
           {isEditing ? 'Bewertung aktualisieren' : 'Bewertung speichern'}
         </Button>
         {mut.isError && <p className="text-sm text-[#C8302A] text-center">{(mut.error as Error).message}</p>}
