@@ -99,19 +99,23 @@ export async function createRestaurant(data: {
 
 export async function fetchReviews(restaurantId: string): Promise<Review[]> {
   const snap = await getDocs(
-    query(collection(db, 'reviews'), where('restaurantId', '==', restaurantId), orderBy('createdAt', 'desc'))
+    query(collection(db, 'reviews'), where('restaurantId', '==', restaurantId))
   )
-  return snap.docs.map(d => toReview(d.id, d.data() as Record<string, unknown>))
+  return snap.docs
+    .map(d => toReview(d.id, d.data() as Record<string, unknown>))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
 export async function fetchAllReviews(): Promise<Review[]> {
-  const snap = await getDocs(query(collection(db, 'reviews'), orderBy('createdAt', 'desc')))
-  return snap.docs.map(d => toReview(d.id, d.data() as Record<string, unknown>))
+  const snap = await getDocs(collection(db, 'reviews'))
+  return snap.docs
+    .map(d => toReview(d.id, d.data() as Record<string, unknown>))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
 export async function fetchUserReviews(userName: string): Promise<Review[]> {
   const snap = await getDocs(
-    query(collection(db, 'reviews'), where('userId', '==', userName), orderBy('createdAt', 'desc'))
+    query(collection(db, 'reviews'), where('userId', '==', userName))
   )
   const reviews = snap.docs.map(d => toReview(d.id, d.data() as Record<string, unknown>))
   const rids = [...new Set(reviews.map(r => r.restaurant_id))]
