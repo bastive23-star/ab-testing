@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Layout } from './components/layout/Layout'
+import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { RankingPage } from './pages/RankingPage'
 import { RestaurantPage } from './pages/RestaurantPage'
 import { AddRestaurantPage } from './pages/AddRestaurantPage'
@@ -22,15 +23,17 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
-          <Route element={<Layout />}>
-            <Route index element={<RankingPage />} />
-            <Route path="map" element={<Suspense fallback={null}><MapPage /></Suspense>} />
-            <Route path="add" element={<AddRestaurantPage />} />
-            <Route path="restaurant/:id" element={<RestaurantPage />} />
-            <Route path="review/:restaurantId" element={<ReviewPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route index element={<RankingPage />} />
+              <Route path="map" element={<Suspense fallback={null}><MapPage /></Suspense>} />
+              <Route path="add" element={<AddRestaurantPage />} />
+              <Route path="restaurant/:id" element={<RestaurantPage />} />
+              <Route path="review/:restaurantId" element={<ReviewPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
           </Route>
         </Routes>
       </HashRouter>
