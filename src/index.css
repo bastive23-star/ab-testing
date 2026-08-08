@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..400&display=swap');
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -69,6 +70,85 @@ body {
 }
 .leaflet-popup-tip { background: #FFFFFF; }
 .leaflet-popup-content { margin: 12px 16px; }
+
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+
+html.dark body {
+  background: #0F0F0E;
+  color: #F2F0EC;
+}
+
+html.dark .glass {
+  background: #1C1A18;
+  border-color: #2D2B27;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+html.dark .glass-strong {
+  background: #211F1C;
+  border-color: #363330;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+}
+
+html.dark .glass-subtle {
+  background: #252220;
+  border-color: transparent;
+}
+
+/* Override hardcoded Tailwind hex classes — attribute selector approach avoids Lightning CSS issues */
+html.dark [class~="text-[#1A1714]"],
+html.dark [class~="text-[#111110]"],
+html.dark [class~="text-[#1A1A1A]"] { color: #F2F0EC !important; }
+
+html.dark [class~="text-[#6B6560]"] { color: #A09C96 !important; }
+
+html.dark [class~="text-[#5C5B57]"] { color: #8A8680 !important; }
+
+html.dark [class~="text-[#9B9894]"],
+html.dark [class~="text-[#9E9791]"] { color: #6B6763 !important; }
+
+html.dark [class~="bg-white"] { background: #1C1A18; }
+html.dark [class~="bg-[#F9F8F5]"] { background: #0F0F0E; }
+html.dark [class~="bg-[#F2F1ED]"] { background: #252220; }
+html.dark [class~="bg-[#EAE7E1]"] { background: #2A2724; }
+
+html.dark [class~="border-[#E8E6E0]"] { border-color: #2D2B27; }
+html.dark [class~="border-[#E0DED8]"] { border-color: #363330; }
+
+/* Date input */
+html.dark input[type='date'] {
+  background: #1C1A18;
+  border-color: #2D2B27;
+  color: #F2F0EC;
+  color-scheme: dark;
+}
+
+/* Text input / textarea */
+html.dark input[type='text'],
+html.dark input[type='url'],
+html.dark textarea {
+  background: #1C1A18;
+  border-color: #2D2B27;
+  color: #F2F0EC;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: #6B6763; }
+
+/* Range input */
+html.dark input[type='range'] { background: #2D2B27; }
+html.dark input[type='range']::-webkit-slider-thumb {
+  background: #3D3B38;
+  border-color: #4A4845;
+}
+
+/* Leaflet */
+html.dark .leaflet-container { background: #1A1917; }
+html.dark .leaflet-popup-content-wrapper {
+  background: #1E1C1A;
+  border-color: #2D2B27;
+  color: #F2F0EC;
+}
+html.dark .leaflet-popup-tip { background: #1E1C1A; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }

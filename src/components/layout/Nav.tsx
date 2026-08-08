@@ -16,7 +16,7 @@ export function Nav() {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe">
       <div className="mx-3 mb-3">
-        <div className="bg-white border border-[#E8E6E0] rounded-[22px] px-2 py-1.5 flex items-center justify-around shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
+        <div className="bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] px-2 py-1.5 flex items-center justify-around shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
           {links.map(({ to, label, icon: Icon, fab }) => {
             const active = to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)
             return fab ? (
@@ -36,7 +36,7 @@ export function Nav() {
               >
                 <div className={cn(
                   'relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200',
-                  active && 'bg-[#F5F4F0]'
+                  active && 'bg-[#F5F4F0] dark:bg-[#2A2724]'
                 )}>
                   <Icon className={cn('size-5 transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')} />
                 </div>

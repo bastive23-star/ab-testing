@@ -130,7 +130,9 @@ export function RestaurantPage() {
             <h2 className="font-semibold text-[#1A1714] mb-4 text-sm">Durchschnitt nach Kategorie</h2>
             <div className="space-y-3">
               {cats.map(cat => {
-                const avg = reviews.reduce((s, r) => s + (r.scores[cat.id] ?? 0), 0) / reviews.length
+                const scored = reviews.filter(r => r.scores[cat.id] !== undefined)
+                if (scored.length === 0) return null
+                const avg = scored.reduce((s, r) => s + r.scores[cat.id], 0) / scored.length
                 const pct = (avg / 10) * 100
                 return (
                   <div key={cat.id} className="flex items-center gap-3">
@@ -182,8 +184,8 @@ export function RestaurantPage() {
 
                   {/* Category scores */}
                   <div className="grid grid-cols-2 gap-1.5 mb-3">
-                    {cats.map(cat => {
-                      const s = review.scores[cat.id] ?? 0
+                    {cats.filter(cat => review.scores[cat.id] !== undefined).map(cat => {
+                      const s = review.scores[cat.id]
                       return (
                         <div key={cat.id} className="flex items-center gap-1.5 glass-subtle rounded-xl px-2.5 py-1.5">
                           <span className="text-sm">{cat.emoji}</span>

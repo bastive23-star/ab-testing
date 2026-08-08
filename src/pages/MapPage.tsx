@@ -53,7 +53,7 @@ export function MapPage() {
         >
           <span className="text-2xl">📍</span>
           <div>
-            <h1 className="font-semibold text-[#1A1714] text-base leading-tight">A/B Testing Karte</h1>
+            <h1 className="font-serif text-[#1A1714] text-base leading-tight">München</h1>
             <p className="text-xs text-[#9E9791]">{withCoords.length} Locations</p>
           </div>
         </motion.div>
