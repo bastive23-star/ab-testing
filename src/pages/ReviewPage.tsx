@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { fetchRestaurant, fetchCategories, submitReview, uploadPhoto } from '../lib/queries'
+import { fetchRestaurant, fetchCategories, submitReview } from '../lib/queries'
 import { calcTotal } from '../lib/scoring'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
@@ -16,7 +16,6 @@ export function ReviewPage() {
   const nav = useNavigate()
   const { user } = useAuth()
   const qc = useQueryClient()
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const { data: restaurant } = useQuery({
     queryKey: ['restaurant', restaurantId],
@@ -31,19 +30,6 @@ export function ReviewPage() {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [notes, setNotes] = useState('')
   const [visitedAt, setVisitedAt] = useState(new Date().toISOString().split('T')[0])
-  const [photos, setPhotos] = useState<File[]>([])
-  const [previews, setPreviews] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
-
-  function setScore(catId: string, v: number) {
-    setScores(p => ({ ...p, [catId]: v }))
-  }
-
-  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).slice(0, 5)
-    setPhotos(files)
-    setPreviews(files.map(f => URL.createObjectURL(f)))
-  }
 
   const totalScore = calcTotal(
     Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])),
@@ -53,17 +39,10 @@ export function ReviewPage() {
   const mut = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Nicht eingeloggt')
-      setUploading(true)
-      const urls = await Promise.all(photos.map(f => uploadPhoto(f, 'review-photos')))
-      setUploading(false)
       await submitReview(
-        restaurantId!,
-        user.uid,
+        restaurantId!, user.uid,
         Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])),
-        cats,
-        urls,
-        notes,
-        visitedAt,
+        cats, [], notes, visitedAt,
       )
     },
     onSuccess: () => {
@@ -107,36 +86,28 @@ export function ReviewPage() {
       </motion.div>
 
       <div className="space-y-4">
-        {/* Ratings */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <GlassCard className="p-4 space-y-5">
             <p className="text-xs font-semibold text-[#9E9791] uppercase tracking-wider">Kategorien</p>
             {cats.map((cat, i) => (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.12 + i * 0.05 }}
-              >
+              <motion.div key={cat.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.12 + i * 0.05 }}>
                 <RatingSlider
                   label={cat.name}
                   emoji={cat.emoji}
                   value={scores[cat.id] ?? 5}
-                  onChange={v => setScore(cat.id, v)}
+                  onChange={v => setScores(p => ({ ...p, [cat.id]: v }))}
                 />
               </motion.div>
             ))}
           </GlassCard>
         </motion.div>
 
-        {/* Date */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <GlassCard className="p-4">
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-[#1A1714]">Datum des Besuchs</span>
               <input
-                type="date"
-                value={visitedAt}
+                type="date" value={visitedAt}
                 max={new Date().toISOString().split('T')[0]}
                 onChange={e => setVisitedAt(e.target.value)}
                 className="glass rounded-[14px] px-4 py-3 text-sm text-[#1A1714] outline-none focus:ring-2 focus:ring-[#C8302A]/30"
@@ -145,31 +116,7 @@ export function ReviewPage() {
           </GlassCard>
         </motion.div>
 
-        {/* Photos */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <GlassCard className="p-4">
-            <p className="text-sm font-medium text-[#1A1714] mb-3">Fotos (optional, max. 5)</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {previews.map((url, i) => (
-                <img key={i} src={url} alt="" className="h-20 w-20 shrink-0 rounded-[12px] object-cover" />
-              ))}
-              {previews.length < 5 && (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="h-20 w-20 shrink-0 glass-subtle rounded-[12px] flex flex-col items-center justify-center gap-1 text-[#9E9791]"
-                >
-                  <span className="text-xl">+</span>
-                  <span className="text-[10px]">Foto</span>
-                </button>
-              )}
-            </div>
-            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-          </GlassCard>
-        </motion.div>
-
-        {/* Notes */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <GlassCard className="p-4">
             <Textarea
               label="Anmerkungen (optional)"
@@ -181,19 +128,11 @@ export function ReviewPage() {
           </GlassCard>
         </motion.div>
 
-        <Button
-          variant="primary"
-          size="lg"
-          className="w-full"
-          loading={mut.isPending || uploading}
-          onClick={() => mut.mutate()}
-        >
+        <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} onClick={() => mut.mutate()}>
           Bewertung speichern
         </Button>
 
-        {mut.isError && (
-          <p className="text-sm text-red-500 text-center">{(mut.error as Error).message}</p>
-        )}
+        {mut.isError && <p className="text-sm text-red-500 text-center">{(mut.error as Error).message}</p>}
       </div>
     </div>
   )
