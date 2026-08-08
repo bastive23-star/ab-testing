@@ -10,6 +10,7 @@ export interface Category {
 export interface Restaurant {
   id: string
   name: string
+  food_type: string
   address: string
   neighborhood: string
   lat: number | null

@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 const EMOJIS = ['🥖','🥩','🫙','🌿','🏮','💰','🌶️','🧅','🫚','🍋','⭐','🔥','❄️','🫀','🎯']
 
 export function CategoriesPage() {
-  const { user } = useAuth()
+  const { name } = useAuth()
   const nav = useNavigate()
   const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
@@ -26,7 +26,7 @@ export function CategoriesPage() {
   const totalWeight = cats.reduce((s, c) => s + c.weight, 0)
 
   const createMut = useMutation({
-    mutationFn: () => createCategory({ name: newName.trim(), weight: newWeight, emoji: newEmoji, created_by: user!.uid }),
+    mutationFn: () => createCategory({ name: newName.trim(), weight: newWeight, emoji: newEmoji, created_by: name }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       setAdding(false); setNewName(''); setNewWeight(10)
@@ -43,7 +43,7 @@ export function CategoriesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
   })
 
-  if (!user) {
+  if (!name) {
     return (
       <div className="px-4 pt-24 text-center">
         <p className="text-[#6B6560]">Bitte einloggen.</p>

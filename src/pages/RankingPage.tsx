@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
@@ -5,6 +6,7 @@ import { fetchRestaurantsWithStats } from '../lib/queries'
 import { GlassCard } from '../components/ui/GlassCard'
 import { ScoreBadge } from '../components/ui/ScoreBadge'
 import { scoreColor } from '../lib/scoring'
+import { cn } from '../lib/utils'
 
 export function RankingPage() {
   const { data: restaurants = [], isLoading } = useQuery({
@@ -13,32 +15,61 @@ export function RankingPage() {
     refetchInterval: 30_000,
   })
 
+  const [filter, setFilter] = useState<string | null>(null)
+
+  const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
+  const filtered = filter ? restaurants.filter(r => r.food_type === filter) : restaurants
+  const ranked = filtered.map((r, i) => ({ ...r, rank: i + 1 }))
+
   return (
     <div className="px-4 pt-12 pb-4 max-w-xl mx-auto">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="mb-8"
+        className="mb-6"
       >
         <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#C8302A] mb-1">München</p>
         <h1 className="font-serif text-4xl text-[#1A1714] leading-tight">
-          Bánh Mì<br />Ranking
+          A/B Testing<br />Ranking
         </h1>
         <p className="text-sm text-[#6B6560] mt-2">
-          {restaurants.length} {restaurants.length === 1 ? 'Restaurant' : 'Restaurants'} bewertet
+          {filtered.length} {filtered.length === 1 ? 'Restaurant' : 'Restaurants'} bewertet
         </p>
       </motion.div>
 
-      {/* List */}
+      {foodTypes.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-wrap gap-2 mb-5"
+        >
+          <button
+            onClick={() => setFilter(null)}
+            className={cn('px-3 py-1.5 rounded-xl text-sm font-medium transition-all', filter === null ? 'bg-[#C8302A] text-white' : 'glass-subtle text-[#6B6560]')}
+          >
+            Alle
+          </button>
+          {foodTypes.map(t => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={cn('px-3 py-1.5 rounded-xl text-sm font-medium transition-all', filter === t ? 'bg-[#C8302A] text-white' : 'glass-subtle text-[#6B6560]')}
+            >
+              {t}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
       {isLoading ? (
         <SkeletonList />
-      ) : restaurants.length === 0 ? (
+      ) : ranked.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="space-y-3">
-          {restaurants.map((r, i) => (
+          {ranked.map((r, i) => (
             <motion.div
               key={r.id}
               initial={{ opacity: 0, x: -16 }}
@@ -47,7 +78,6 @@ export function RankingPage() {
             >
               <Link to={`/restaurant/${r.id}`}>
                 <GlassCard hover className="p-4 flex items-center gap-4">
-                  {/* Rank */}
                   <div className="shrink-0 w-8 text-center">
                     {i === 0 ? (
                       <span className="text-2xl leading-none">🥇</span>
@@ -60,7 +90,6 @@ export function RankingPage() {
                     )}
                   </div>
 
-                  {/* Cover */}
                   <div className="shrink-0 w-16 h-16 rounded-[14px] overflow-hidden bg-[#EAE7E1]">
                     {r.cover_photo_url ? (
                       <img src={r.cover_photo_url} alt={r.name} className="w-full h-full object-cover" />
@@ -69,10 +98,9 @@ export function RankingPage() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <h2 className="font-semibold text-[#1A1714] text-base leading-tight truncate">{r.name}</h2>
-                    <p className="text-xs text-[#9E9791] mt-0.5">{r.neighborhood}</p>
+                    <p className="text-xs text-[#9E9791] mt-0.5">{r.neighborhood || r.food_type}</p>
                     <div className="mt-1.5 flex items-center gap-1.5">
                       <div className="h-1.5 flex-1 rounded-full bg-black/8 overflow-hidden">
                         <div
@@ -89,7 +117,6 @@ export function RankingPage() {
                     </div>
                   </div>
 
-                  {/* Score */}
                   <ScoreBadge score={r.avg_score} size="md" />
                 </GlassCard>
               </Link>
@@ -130,7 +157,7 @@ function EmptyState() {
       <GlassCard className="p-10 text-center">
         <div className="text-5xl mb-4">🥖</div>
         <h3 className="font-semibold text-[#1A1714] mb-2">Noch keine Einträge</h3>
-        <p className="text-sm text-[#6B6560]">Füge das erste Bánh Mì Restaurant in München hinzu!</p>
+        <p className="text-sm text-[#6B6560]">Füge das erste Restaurant hinzu!</p>
       </GlassCard>
     </motion.div>
   )

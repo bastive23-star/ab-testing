@@ -13,7 +13,7 @@ import { useAuth } from '../hooks/useAuth'
 export function RestaurantPage() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
-  const { user } = useAuth()
+  const { name } = useAuth()
 
   const { data: restaurant } = useQuery({
     queryKey: ['restaurant', id],
@@ -36,7 +36,7 @@ export function RestaurantPage() {
 
   if (!restaurant) return <LoadingState />
 
-  const hasReviewed = reviews.some(r => r.user_id === user?.uid)
+  const hasReviewed = reviews.some(r => r.user_id === name)
 
   return (
     <div className="pb-4">
@@ -88,10 +88,10 @@ export function RestaurantPage() {
               variant="primary"
               size="lg"
               className="w-full"
-              onClick={() => nav(hasReviewed ? '#' : `/review/${restaurant.id}`)}
-              disabled={!user}
+              onClick={() => nav(`/review/${restaurant.id}`)}
+              disabled={!name}
             >
-              {!user ? 'Einloggen zum Bewerten' : hasReviewed ? 'Bewertung bearbeiten' : 'Jetzt bewerten'}
+              {hasReviewed ? 'Bewertung bearbeiten' : 'Jetzt bewerten'}
             </Button>
           </div>
         </GlassCard>
@@ -143,9 +143,9 @@ export function RestaurantPage() {
                 <GlassCard className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2.5">
-                      <Avatar name={review.profiles?.username ?? '?'} url={review.profiles?.avatar_url} />
+                      <Avatar name={review.user_id} />
                       <div>
-                        <p className="font-medium text-sm text-[#1A1714]">{review.profiles?.username ?? 'Anonym'}</p>
+                        <p className="font-medium text-sm text-[#1A1714]">{review.user_id}</p>
                         <p className="text-xs text-[#9E9791]">{formatDate(review.visited_at)}</p>
                       </div>
                     </div>
