@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { fetchRestaurantsWithStats } from '../lib/queries'
+import { fetchRestaurantsWithStats, fetchAllReviews } from '../lib/queries'
 import { scoreColor } from '../lib/scoring'
 import { cn } from '../lib/utils'
 
@@ -12,11 +12,35 @@ export function RankingPage() {
     queryFn: fetchRestaurantsWithStats,
     refetchInterval: 30_000,
   })
+  const { data: allReviews = [] } = useQuery({
+    queryKey: ['all-reviews'],
+    queryFn: fetchAllReviews,
+  })
 
-  const [filter, setFilter] = useState<string | null>(null)
+  const [foodFilter, setFoodFilter] = useState<string | null>(null)
+  const [reviewer, setReviewer] = useState<string | null>(null)
 
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
-  const filtered = filter ? restaurants.filter(r => r.food_type === filter) : restaurants
+  const reviewers = [...new Set(allReviews.map(r => r.user_id))].sort()
+
+  // If reviewer selected: compute per-reviewer scores
+  const restaurantList = (() => {
+    let list = foodFilter ? restaurants.filter(r => r.food_type === foodFilter) : restaurants
+
+    if (reviewer) {
+      const myReviews = allReviews.filter(r => r.user_id === reviewer)
+      const myScoreMap: Record<string, { score: number; count: number }> = {}
+      for (const rev of myReviews) {
+        myScoreMap[rev.restaurant_id] = { score: rev.total_score, count: 1 }
+      }
+      list = list
+        .filter(r => myScoreMap[r.id])
+        .map(r => ({ ...r, avg_score: myScoreMap[r.id].score, review_count: 1 }))
+        .sort((a, b) => b.avg_score - a.avg_score)
+    }
+
+    return list
+  })()
 
   return (
     <div className="px-5 pt-14 pb-4 max-w-xl mx-auto">
@@ -33,43 +57,69 @@ export function RankingPage() {
         </h1>
         <div className="mt-3 flex items-center gap-2">
           <div className="h-px flex-1 bg-[#E8E6E0]" />
-          <span className="text-xs text-[#9B9894]">{filtered.length} Restaurants</span>
+          <span className="text-xs text-[#9B9894]">{restaurantList.length} Restaurants</span>
         </div>
       </motion.div>
 
-      {/* Filter */}
-      {foodTypes.length > 1 && (
+      {/* Filters */}
+      {(foodTypes.length > 1 || reviewers.length > 0) && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-wrap gap-1.5 mb-7"
+          className="space-y-2 mb-7"
         >
-          {[null, ...foodTypes].map(t => (
-            <button
-              key={t ?? 'alle'}
-              onClick={() => setFilter(t)}
-              className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium transition-all border',
-                filter === t
-                  ? 'bg-[#111110] text-white border-[#111110]'
-                  : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
-              )}
-            >
-              {t ?? 'Alle'}
-            </button>
-          ))}
+          {/* Food type */}
+          {foodTypes.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {[null, ...foodTypes].map(t => (
+                <button
+                  key={t ?? 'alle'}
+                  onClick={() => setFoodFilter(t)}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                    foodFilter === t
+                      ? 'bg-[#111110] text-white border-[#111110]'
+                      : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
+                  )}
+                >
+                  {t ?? 'Alle'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Reviewer */}
+          {reviewers.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-[#9B9894] self-center mr-1">Von</span>
+              {[null, ...reviewers].map(r => (
+                <button
+                  key={r ?? 'alle'}
+                  onClick={() => setReviewer(r)}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                    reviewer === r
+                      ? 'bg-[#C8302A] text-white border-[#C8302A]'
+                      : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
+                  )}
+                >
+                  {r ?? 'Allen'}
+                </button>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
 
       {/* List */}
       {isLoading ? (
         <SkeletonList />
-      ) : filtered.length === 0 ? (
+      ) : restaurantList.length === 0 ? (
         <EmptyState />
       ) : (
         <div>
-          {filtered.map((r, i) => (
+          {restaurantList.map((r, i) => (
             <motion.div
               key={r.id}
               initial={{ opacity: 0, y: 12 }}
@@ -78,12 +128,9 @@ export function RankingPage() {
             >
               <Link to={`/restaurant/${r.id}`} className="block group">
                 <div className="py-4 flex items-start gap-4">
-                  {/* Rank */}
                   <span className="font-serif text-5xl leading-none text-[#E8E6E0] group-hover:text-[#D0CEC8] transition-colors shrink-0 w-14 text-right">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-
-                  {/* Main content */}
                   <div className="flex-1 min-w-0 pt-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -95,7 +142,6 @@ export function RankingPage() {
                           {r.review_count > 0 && ` · ${r.review_count} ${r.review_count === 1 ? 'Review' : 'Reviews'}`}
                         </p>
                       </div>
-                      {/* Score */}
                       <div className="shrink-0 text-right">
                         <span
                           className="font-serif text-2xl leading-none tabular-nums"
@@ -108,8 +154,6 @@ export function RankingPage() {
                         )}
                       </div>
                     </div>
-
-                    {/* Score bar */}
                     {r.avg_score > 0 && (
                       <div className="mt-2.5 h-px bg-[#E8E6E0] overflow-hidden">
                         <motion.div
@@ -123,9 +167,7 @@ export function RankingPage() {
                     )}
                   </div>
                 </div>
-                {i < filtered.length - 1 && (
-                  <div className="h-px bg-[#F0EEE8] ml-18" />
-                )}
+                {i < restaurantList.length - 1 && <div className="h-px bg-[#F0EEE8] ml-18" />}
               </Link>
             </motion.div>
           ))}
@@ -155,14 +197,9 @@ function SkeletonList() {
 
 function EmptyState() {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="py-16 text-center"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center">
       <p className="font-serif text-4xl text-[#E8E6E0] mb-4">—</p>
-      <p className="text-sm text-[#9B9894]">Noch keine Einträge</p>
-      <p className="text-xs text-[#C0BEB8] mt-1">Füge das erste Restaurant hinzu</p>
+      <p className="text-sm text-[#9B9894]">Keine Einträge</p>
     </motion.div>
   )
 }

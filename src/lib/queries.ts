@@ -104,6 +104,11 @@ export async function fetchReviews(restaurantId: string): Promise<Review[]> {
   return snap.docs.map(d => toReview(d.id, d.data() as Record<string, unknown>))
 }
 
+export async function fetchAllReviews(): Promise<Review[]> {
+  const snap = await getDocs(query(collection(db, 'reviews'), orderBy('createdAt', 'desc')))
+  return snap.docs.map(d => toReview(d.id, d.data() as Record<string, unknown>))
+}
+
 export async function fetchUserReviews(userName: string): Promise<Review[]> {
   const snap = await getDocs(
     query(collection(db, 'reviews'), where('userId', '==', userName), orderBy('createdAt', 'desc'))
