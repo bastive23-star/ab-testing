@@ -6,9 +6,9 @@ import { fetchRestaurantsWithStats } from '../lib/queries'
 import { scoreColor, scoreLabel } from '../lib/scoring'
 import { motion } from 'framer-motion'
 
-// Custom marker icon using emoji + score
-function createMarkerIcon(score: number) {
+function createMarkerIcon(score: number, name: string) {
   const color = scoreColor(score)
+  const label = name.length > 16 ? name.slice(0, 15) + '…' : name
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
       <filter id="shadow">
@@ -20,9 +20,10 @@ function createMarkerIcon(score: number) {
       <text x="22" y="24" text-anchor="middle" font-size="11" font-weight="700"
         font-family="Inter,sans-serif" fill="${color}">${score.toFixed(1)}</text>
     </svg>
+    <div style="position:absolute;top:54px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:2px 7px;font-size:11px;font-weight:600;color:#1A1714;box-shadow:0 1px 6px rgba(0,0,0,0.18);border:1px solid rgba(0,0,0,0.06)">${label}</div>
   `
   return L.divIcon({
-    html: svg,
+    html: `<div style="position:relative">${svg}</div>`,
     className: '',
     iconSize: [44, 52],
     iconAnchor: [22, 52],
@@ -52,7 +53,7 @@ export function MapPage() {
         >
           <span className="text-2xl">📍</span>
           <div>
-            <h1 className="font-semibold text-[#1A1714] text-base leading-tight">Bánh Mì Karte</h1>
+            <h1 className="font-semibold text-[#1A1714] text-base leading-tight">A/B Testing Karte</h1>
             <p className="text-xs text-[#9E9791]">{withCoords.length} Locations</p>
           </div>
         </motion.div>
@@ -72,7 +73,7 @@ export function MapPage() {
           <Marker
             key={r.id}
             position={[r.lat!, r.lng!]}
-            icon={createMarkerIcon(r.avg_score)}
+            icon={createMarkerIcon(r.avg_score, r.name)}
           >
             <Popup>
               <Link to={`/restaurant/${r.id}`} className="block no-underline">
