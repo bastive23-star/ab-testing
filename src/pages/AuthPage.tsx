@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { upsertProfile } from '../lib/queries'
 import { isAllowed } from '../lib/allowlist'
@@ -9,54 +9,71 @@ import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 
-type Mode = 'login' | 'signup'
+const REDIRECT_URL = 'https://bastive23-star.github.io/ab-testing/'
 
 export function AuthPage() {
   const nav = useNavigate()
-  const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [completing, setCompleting] = useState(false)
+
+  // Handle magic link redirect
+  useEffect(() => {
+    if (!isSignInWithEmailLink(auth, window.location.href)) return
+    setCompleting(true)
+    const savedEmail = localStorage.getItem('emailForSignIn') ?? ''
+    if (!savedEmail) {
+      setError('E-Mail nicht gefunden. Bitte erneut anfordern.')
+      setCompleting(false)
+      return
+    }
+    signInWithEmailLink(auth, savedEmail, window.location.href)
+      .then(async result => {
+        localStorage.removeItem('emailForSignIn')
+        const username = savedEmail.split('@')[0]
+        await upsertProfile(result.user.uid, username)
+        nav('/')
+      })
+      .catch(err => {
+        setError(err.message)
+        setCompleting(false)
+      })
+  }, [nav])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(''); setSuccess('')
+    setError('')
     const emailTrimmed = email.trim().toLowerCase()
-
     if (!isAllowed(emailTrimmed)) {
-      setError('Diese E-Mail-Adresse ist nicht für den Zugriff berechtigt.')
+      setError('Diese E-Mail ist nicht für den Zugriff berechtigt.')
       return
     }
-
     setLoading(true)
     try {
-      if (mode === 'signup') {
-        if (!username.trim()) { setError('Benutzername fehlt'); setLoading(false); return }
-        const { user } = await createUserWithEmailAndPassword(auth, emailTrimmed, password)
-        await updateProfile(user, { displayName: username.trim() })
-        await upsertProfile(user.uid, username.trim())
-        nav('/')
-      } else {
-        await signInWithEmailAndPassword(auth, emailTrimmed, password)
-        nav('/')
-      }
+      await sendSignInLinkToEmail(auth, emailTrimmed, {
+        url: REDIRECT_URL,
+        handleCodeInApp: true,
+      })
+      localStorage.setItem('emailForSignIn', emailTrimmed)
+      setSent(true)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Fehler'
-      if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
-        setError('E-Mail oder Passwort falsch.')
-      } else if (msg.includes('email-already-in-use')) {
-        setError('Diese E-Mail ist bereits registriert.')
-      } else if (msg.includes('weak-password')) {
-        setError('Passwort muss mindestens 6 Zeichen haben.')
-      } else {
-        setError(msg)
-      }
+      setError(err instanceof Error ? err.message : 'Fehler beim Senden')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (completing) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="text-4xl animate-bounce">🥖</div>
+          <p className="text-sm text-[#6B6560]">Einloggen…</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -79,55 +96,63 @@ export function AuthPage() {
         </div>
 
         <GlassCard variant="strong" className="p-6">
-          <div className="flex glass-subtle rounded-[14px] p-1 mb-6">
-            {(['login', 'signup'] as Mode[]).map(m => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); setError(''); setSuccess('') }}
-                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  mode === m ? 'bg-white shadow-sm text-[#1A1714]' : 'text-[#9E9791]'
-                }`}
+          <AnimatePresence mode="wait">
+            {sent ? (
+              <motion.div
+                key="sent"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-4 space-y-3"
               >
-                {m === 'login' ? 'Anmelden' : 'Registrieren'}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <AnimatePresence>
-              {mode === 'signup' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
+                <div className="text-4xl">📬</div>
+                <h2 className="font-semibold text-[#1A1714]">Link gesendet!</h2>
+                <p className="text-sm text-[#6B6560]">
+                  Check deine E-Mails — klick auf den Link um einzuloggen.
+                </p>
+                <button
+                  onClick={() => setSent(false)}
+                  className="text-xs text-[#9E9791] underline underline-offset-2"
                 >
-                  <Input label="Benutzername" placeholder="Dein Name" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <Input label="E-Mail" type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required />
-            <Input label="Passwort" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required />
-
-            <AnimatePresence>
-              {error && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="text-sm text-red-500 text-center bg-red-50 rounded-xl py-2.5 px-3">
-                  {error}
-                </motion.p>
-              )}
-              {success && (
-                <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  className="text-sm text-green-600 text-center bg-green-50 rounded-xl py-2.5 px-3">
-                  {success}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            <Button variant="primary" size="lg" type="submit" loading={loading} className="w-full mt-2">
-              {mode === 'login' ? 'Einloggen' : 'Account erstellen'}
-            </Button>
-          </form>
+                  Andere E-Mail verwenden
+                </button>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onSubmit={handleSubmit}
+                className="space-y-4"
+              >
+                <div>
+                  <h2 className="font-semibold text-[#1A1714] mb-1">Einloggen</h2>
+                  <p className="text-xs text-[#9E9791]">Du bekommst einen Magic Link per E-Mail.</p>
+                </div>
+                <Input
+                  label="E-Mail"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+                <AnimatePresence>
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="text-sm text-red-500 bg-red-50 rounded-xl py-2.5 px-3"
+                    >
+                      {error}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                <Button variant="primary" size="lg" type="submit" loading={loading} className="w-full">
+                  Magic Link senden
+                </Button>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </GlassCard>
       </motion.div>
     </div>
