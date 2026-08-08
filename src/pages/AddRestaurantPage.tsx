@@ -16,23 +16,36 @@ export function AddRestaurantPage() {
   const { name } = useAuth()
   const qc = useQueryClient()
 
-  const [form, setForm] = useState({ name: '', address: '', neighborhood: '', lat: '', lng: '', google_maps_url: '', website: '' })
+  const [form, setForm] = useState({ name: '', address: '', neighborhood: '', google_maps_url: '', website: '' })
   const [foodType, setFoodType] = useState('Bánh Mì')
   const [customType, setCustomType] = useState('')
 
   const mut = useMutation({
-    mutationFn: () => createRestaurant({
-      name: form.name.trim(),
-      food_type: foodType === 'Andere' ? customType.trim() || 'Andere' : foodType,
-      address: form.address.trim(),
-      neighborhood: form.neighborhood.trim(),
-      lat: form.lat ? Number(form.lat) : null,
-      lng: form.lng ? Number(form.lng) : null,
-      google_maps_url: form.google_maps_url || null,
-      website: form.website || null,
-      cover_photo_url: null,
-      created_by: name,
-    }),
+    mutationFn: async () => {
+      const address = form.address.trim()
+      let lat: number | null = null
+      let lng: number | null = null
+      if (address) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`, {
+            headers: { 'Accept-Language': 'de', 'User-Agent': 'ab-testing-app' },
+          })
+          const data = await res.json()
+          if (data[0]) { lat = parseFloat(data[0].lat); lng = parseFloat(data[0].lon) }
+        } catch { /* map bleibt leer */ }
+      }
+      return createRestaurant({
+        name: form.name.trim(),
+        food_type: foodType === 'Andere' ? customType.trim() || 'Andere' : foodType,
+        address,
+        neighborhood: form.neighborhood.trim(),
+        lat, lng,
+        google_maps_url: form.google_maps_url || null,
+        website: form.website || null,
+        cover_photo_url: null,
+        created_by: name,
+      })
+    },
     onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['restaurants'] }); nav(`/restaurant/${r.id}`) },
   })
 
@@ -74,17 +87,6 @@ export function AddRestaurantPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <GlassCard className="p-4 space-y-4">
-            <p className="text-xs font-semibold text-[#9E9791] uppercase tracking-wider">Koordinaten (für Karte)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Breitengrad" placeholder="48.1351" type="number" step="any" value={form.lat} onChange={set('lat')} />
-              <Input label="Längengrad" placeholder="11.5820" type="number" step="any" value={form.lng} onChange={set('lng')} />
-            </div>
-            <p className="text-xs text-[#9E9791]">Koordinaten findest du bei Google Maps per Rechtsklick.</p>
-          </GlassCard>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <GlassCard className="p-4 space-y-4">
             <Input label="Google Maps Link" placeholder="https://maps.google.com/…" type="url" value={form.google_maps_url} onChange={set('google_maps_url')} />
             <Input label="Website" placeholder="https://…" type="url" value={form.website} onChange={set('website')} />
