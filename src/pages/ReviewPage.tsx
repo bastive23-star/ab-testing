@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { fetchRestaurant, fetchCategories, submitReview, createCategory } from '../lib/queries'
+import { fetchRestaurant, fetchCategories, fetchMyReview, submitReview, createCategory } from '../lib/queries'
 import { calcTotal } from '../lib/scoring'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
@@ -28,11 +28,30 @@ export function ReviewPage() {
     queryKey: ['categories'],
     queryFn: fetchCategories,
   })
+  const { data: existingReview } = useQuery({
+    queryKey: ['my-review', restaurantId, name],
+    queryFn: () => fetchMyReview(restaurantId!, name),
+    enabled: !!restaurantId && !!name,
+  })
+
   const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant?.food_type)
 
   const [scores, setScores] = useState<Record<string, number>>({})
   const [notes, setNotes] = useState('')
   const [visitedAt, setVisitedAt] = useState(new Date().toISOString().split('T')[0])
+  const [prefilled, setPrefilled] = useState(false)
+
+  // Pre-fill from existing review
+  useEffect(() => {
+    if (existingReview && !prefilled) {
+      setScores(existingReview.scores)
+      setNotes(existingReview.notes ?? '')
+      setVisitedAt(existingReview.visited_at ?? new Date().toISOString().split('T')[0])
+      setPrefilled(true)
+    }
+  }, [existingReview, prefilled])
+
+  const isEditing = !!existingReview
 
   // Quick add category
   const [addingCat, setAddingCat] = useState(false)
@@ -61,6 +80,7 @@ export function ReviewPage() {
     mutationFn: () => submitReview(restaurantId!, name, Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])), cats, notes, visitedAt),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews', restaurantId] })
+      qc.invalidateQueries({ queryKey: ['my-review', restaurantId, name] })
       qc.invalidateQueries({ queryKey: ['all-reviews'] })
       qc.invalidateQueries({ queryKey: ['restaurants'] })
       nav(`/restaurant/${restaurantId}`)
@@ -75,7 +95,9 @@ export function ReviewPage() {
         </button>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#C8302A] mb-0.5">Bewertung</p>
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#C8302A] mb-0.5">
+              {isEditing ? 'Bewertung bearbeiten' : 'Bewertung'}
+            </p>
             <h1 className="font-serif text-2xl text-[#111110] leading-tight">{restaurant?.name ?? '…'}</h1>
           </div>
           <AnimatePresence mode="wait">
@@ -96,7 +118,6 @@ export function ReviewPage() {
               </motion.div>
             ))}
 
-            {/* Quick add category */}
             <AnimatePresence>
               {addingCat ? (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-3 pt-2 border-t border-[#E8E6E0]">
@@ -147,7 +168,7 @@ export function ReviewPage() {
         </motion.div>
 
         <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} onClick={() => mut.mutate()}>
-          Bewertung speichern
+          {isEditing ? 'Bewertung aktualisieren' : 'Bewertung speichern'}
         </Button>
         {mut.isError && <p className="text-sm text-[#C8302A] text-center">{(mut.error as Error).message}</p>}
       </div>

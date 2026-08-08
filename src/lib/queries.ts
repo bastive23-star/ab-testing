@@ -106,6 +106,14 @@ export async function fetchReviews(restaurantId: string): Promise<Review[]> {
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
 
+export async function fetchMyReview(restaurantId: string, userName: string): Promise<Review | null> {
+  const snap = await getDocs(
+    query(collection(db, 'reviews'), where('restaurantId', '==', restaurantId), where('userId', '==', userName))
+  )
+  if (snap.empty) return null
+  return toReview(snap.docs[0].id, snap.docs[0].data() as Record<string, unknown>)
+}
+
 export async function fetchAllReviews(): Promise<Review[]> {
   const snap = await getDocs(collection(db, 'reviews'))
   return snap.docs
