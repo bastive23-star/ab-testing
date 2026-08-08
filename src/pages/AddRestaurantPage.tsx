@@ -26,6 +26,21 @@ interface NominatimResult {
   }
 }
 
+async function searchNominatim(q: string): Promise<NominatimResult[]> {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1&countrycodes=de`,
+    { headers: { 'Accept-Language': 'de', 'User-Agent': 'ab-testing-app' } },
+  )
+  return res.json()
+}
+
+function formatStreet(a: NominatimResult['address']) {
+  return [a.road, a.house_number].filter(Boolean).join(' ')
+}
+function formatNeighborhood(a: NominatimResult['address']) {
+  return a.suburb ?? a.neighbourhood ?? a.city_district ?? ''
+}
+
 export function AddRestaurantPage() {
   const nav = useNavigate()
   const { name } = useAuth()
@@ -34,43 +49,62 @@ export function AddRestaurantPage() {
   const [form, setForm] = useState({ name: '', address: '', neighborhood: '', google_maps_url: '', website: '' })
   const [foodType, setFoodType] = useState('Bánh Mì')
   const [customType, setCustomType] = useState('')
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [nameSuggestions, setNameSuggestions] = useState<NominatimResult[]>([])
+  const [showNameSug, setShowNameSug] = useState(false)
+  const [addrSuggestions, setAddrSuggestions] = useState<NominatimResult[]>([])
+  const [showAddrSug, setShowAddrSug] = useState(false)
+
+  const nameDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const addrDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const q = form.name.trim()
-    if (q.length < 3) { setSuggestions([]); return }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
+    if (q.length < 3) { setNameSuggestions([]); return }
+    if (nameDebounce.current) clearTimeout(nameDebounce.current)
+    nameDebounce.current = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ' München')}&format=json&limit=5&addressdetails=1&countrycodes=de`,
-          { headers: { 'Accept-Language': 'de', 'User-Agent': 'ab-testing-app' } },
-        )
-        const data: NominatimResult[] = await res.json()
-        setSuggestions(data)
-        setShowSuggestions(data.length > 0)
-      } catch { setSuggestions([]) }
+        const data = await searchNominatim(q + ' München')
+        setNameSuggestions(data)
+        setShowNameSug(data.length > 0)
+      } catch { setNameSuggestions([]) }
     }, 400)
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    return () => { if (nameDebounce.current) clearTimeout(nameDebounce.current) }
   }, [form.name])
 
-  function pickSuggestion(s: NominatimResult) {
+  useEffect(() => {
+    const q = form.address.trim()
+    if (q.length < 4) { setAddrSuggestions([]); return }
+    if (addrDebounce.current) clearTimeout(addrDebounce.current)
+    addrDebounce.current = setTimeout(async () => {
+      try {
+        const data = await searchNominatim(q + ' München')
+        setAddrSuggestions(data)
+        setShowAddrSug(data.length > 0)
+      } catch { setAddrSuggestions([]) }
+    }, 400)
+    return () => { if (addrDebounce.current) clearTimeout(addrDebounce.current) }
+  }, [form.address])
+
+  function applySuggestion(s: NominatimResult, fillName = false) {
     const a = s.address
-    const street = [a.road, a.house_number].filter(Boolean).join(' ')
+    const street = formatStreet(a)
     const address = street ? `${street}, München` : s.display_name.split(',').slice(0, 2).join(',').trim()
-    const neighborhood = a.suburb ?? a.neighbourhood ?? a.city_district ?? ''
+    const neighborhood = formatNeighborhood(a)
     const lat = parseFloat(s.lat)
     const lng = parseFloat(s.lon)
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-    setForm(p => ({ ...p, address, neighborhood, google_maps_url: p.google_maps_url || mapsUrl }))
+    setForm(p => ({
+      ...p,
+      ...(fillName ? { name: s.display_name.split(',')[0] } : {}),
+      address,
+      neighborhood,
+      google_maps_url: p.google_maps_url || mapsUrl,
+    }))
     setCoords({ lat, lng })
-    setSuggestions([])
-    setShowSuggestions(false)
+    setNameSuggestions([]); setShowNameSug(false)
+    setAddrSuggestions([]); setShowAddrSug(false)
   }
 
   const mut = useMutation({
@@ -79,10 +113,7 @@ export function AddRestaurantPage() {
       let lng = coords?.lng ?? null
       if (!lat && form.address.trim()) {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(form.address.trim())}&format=json&limit=1`, {
-            headers: { 'Accept-Language': 'de', 'User-Agent': 'ab-testing-app' },
-          })
-          const data = await res.json()
+          const data = await searchNominatim(form.address.trim())
           if (data[0]) { lat = parseFloat(data[0].lat); lng = parseFloat(data[0].lon) }
         } catch { /* map bleibt leer */ }
       }
@@ -111,18 +142,20 @@ export function AddRestaurantPage() {
   return (
     <div className="px-4 pt-12 pb-4 max-w-xl mx-auto">
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
-        <button onClick={() => nav(-1)} className="flex items-center gap-1.5 text-sm text-[#9E9791] mb-6"><ChevronLeft /> Zurück</button>
-        <h1 className="font-serif text-3xl text-[#1A1714] mb-6">Restaurant<br />hinzufügen</h1>
+        <button onClick={() => nav(-1)} className="flex items-center gap-1.5 text-sm text-[#9B9894] mb-6"><ChevronLeft /> Zurück</button>
+        <h1 className="font-serif text-3xl text-[#111110] mb-6">Restaurant<br />hinzufügen</h1>
       </motion.div>
 
       <div className="space-y-4">
+        {/* Kategorie */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           <GlassCard className="p-4 space-y-3">
-            <p className="text-xs font-semibold text-[#9E9791] uppercase tracking-wider">Kategorie</p>
+            <p className="text-xs font-semibold text-[#9B9894] uppercase tracking-wider">Kategorie</p>
             <div className="flex flex-wrap gap-2">
               {FOOD_TYPES.map(t => (
                 <button key={t} onClick={() => setFoodType(t)}
-                  className={cn('px-3 py-1.5 rounded-xl text-sm font-medium transition-all', foodType === t ? 'bg-[#C8302A] text-white' : 'glass-subtle text-[#6B6560]')}>
+                  className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all border',
+                    foodType === t ? 'bg-[#111110] text-white border-[#111110]' : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]')}>
                   {t}
                 </button>
               ))}
@@ -133,53 +166,50 @@ export function AddRestaurantPage() {
           </GlassCard>
         </motion.div>
 
+        {/* Name + Adresse */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <GlassCard className="p-4 space-y-4">
-            {/* Name + Autocomplete */}
+            {/* Name autocomplete */}
             <div className="relative">
               <Input
                 label="Name des Restaurants *"
                 placeholder="z.B. Bánh Mì Saigon"
                 value={form.name}
                 onChange={set('name')}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onFocus={() => nameSuggestions.length > 0 && setShowNameSug(true)}
+                onBlur={() => setTimeout(() => setShowNameSug(false), 150)}
                 required
               />
-              <AnimatePresence>
-                {showSuggestions && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-0 right-0 top-full mt-1.5 z-50 glass-strong rounded-[16px] overflow-hidden shadow-lg"
-                  >
-                    {suggestions.map((s, i) => {
-                      const a = s.address
-                      const street = [a.road, a.house_number].filter(Boolean).join(' ')
-                      const sub = a.suburb ?? a.neighbourhood ?? a.city_district ?? ''
-                      return (
-                        <button
-                          key={i}
-                          onMouseDown={() => pickSuggestion(s)}
-                          className="w-full text-left px-4 py-3 hover:bg-black/5 transition-colors border-b border-black/6 last:border-0"
-                        >
-                          <p className="text-sm font-medium text-[#1A1714] truncate">{street || s.display_name.split(',')[0]}</p>
-                          {sub && <p className="text-xs text-[#9E9791] mt-0.5">{sub}</p>}
-                        </button>
-                      )
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <SuggestionsDropdown
+                show={showNameSug}
+                items={nameSuggestions}
+                onPick={s => applySuggestion(s)}
+              />
             </div>
 
-            <Input label="Adresse *" placeholder="z.B. Sendlinger Str. 1, München" value={form.address} onChange={set('address')} required />
+            {/* Address autocomplete */}
+            <div className="relative">
+              <Input
+                label="Adresse *"
+                placeholder="z.B. Sendlinger Str. 1"
+                value={form.address}
+                onChange={set('address')}
+                onFocus={() => addrSuggestions.length > 0 && setShowAddrSug(true)}
+                onBlur={() => setTimeout(() => setShowAddrSug(false), 150)}
+                required
+              />
+              <SuggestionsDropdown
+                show={showAddrSug}
+                items={addrSuggestions}
+                onPick={s => applySuggestion(s)}
+              />
+            </div>
+
             <Input label="Viertel" placeholder="z.B. Altstadt, Schwabing…" value={form.neighborhood} onChange={set('neighborhood')} />
           </GlassCard>
         </motion.div>
 
+        {/* Links */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <GlassCard className="p-4 space-y-4">
             <Input label="Google Maps Link" placeholder="https://maps.google.com/…" type="url" value={form.google_maps_url} onChange={set('google_maps_url')} />
@@ -190,9 +220,40 @@ export function AddRestaurantPage() {
         <Button variant="primary" size="lg" className="w-full" loading={mut.isPending} disabled={!form.name || !form.address} onClick={() => mut.mutate()}>
           Restaurant speichern
         </Button>
-        {mut.isError && <p className="text-sm text-red-500 text-center">{(mut.error as Error).message}</p>}
+        {mut.isError && <p className="text-sm text-[#C8302A] text-center">{(mut.error as Error).message}</p>}
       </div>
     </div>
+  )
+}
+
+function SuggestionsDropdown({ show, items, onPick }: { show: boolean; items: NominatimResult[]; onPick: (s: NominatimResult) => void }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.15 }}
+          className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border border-[#E8E6E0] rounded-xl overflow-hidden shadow-lg"
+        >
+          {items.map((s, i) => {
+            const street = formatStreet(s.address)
+            const sub = formatNeighborhood(s.address)
+            return (
+              <button
+                key={i}
+                onMouseDown={() => onPick(s)}
+                className="w-full text-left px-4 py-3 hover:bg-[#F9F8F5] transition-colors border-b border-[#F0EEE8] last:border-0"
+              >
+                <p className="text-sm font-medium text-[#111110] truncate">{street || s.display_name.split(',')[0]}</p>
+                {sub && <p className="text-xs text-[#9B9894] mt-0.5">{sub}</p>}
+              </button>
+            )
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
