@@ -1,0 +1,157 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from '../lib/supabase'
+import { isAllowed } from '../lib/allowlist'
+import { GlassCard } from '../components/ui/GlassCard'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+
+type Mode = 'login' | 'signup'
+
+export function AuthPage() {
+  const nav = useNavigate()
+  const [mode, setMode] = useState<Mode>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(''); setSuccess('')
+    const emailTrimmed = email.trim().toLowerCase()
+
+    if (!isAllowed(emailTrimmed)) {
+      setError('Diese E-Mail-Adresse ist nicht für den Zugriff berechtigt.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (mode === 'signup') {
+        if (!username.trim()) { setError('Benutzername fehlt'); setLoading(false); return }
+        const { error: err } = await supabase.auth.signUp({
+          email: emailTrimmed,
+          password,
+          options: { data: { username: username.trim() } },
+        })
+        if (err) throw err
+        setSuccess('Bestätigungs-E-Mail gesendet! Bitte prüfe dein Postfach.')
+      } else {
+        const { error: err } = await supabase.auth.signInWithPassword({ email: emailTrimmed, password })
+        if (err) throw err
+        nav('/')
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Fehler beim Anmelden')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4 py-12">
+      {/* Background decoration */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#C8302A]/8 blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-[#E85D04]/6 blur-3xl" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        className="w-full max-w-sm"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="text-5xl mb-3">🥖</div>
+          <h1 className="font-serif text-3xl text-[#1A1714]">Bánh Mì<br />München</h1>
+          <p className="text-sm text-[#9E9791] mt-2">Nur für geladene Gäste</p>
+        </div>
+
+        <GlassCard variant="strong" className="p-6">
+          {/* Mode toggle */}
+          <div className="flex glass-subtle rounded-[14px] p-1 mb-6">
+            {(['login', 'signup'] as Mode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setError(''); setSuccess('') }}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  mode === m ? 'bg-white shadow-sm text-[#1A1714]' : 'text-[#9E9791]'
+                }`}
+              >
+                {m === 'login' ? 'Anmelden' : 'Registrieren'}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <AnimatePresence>
+              {mode === 'signup' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Input
+                    label="Benutzername"
+                    placeholder="Dein Name"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    autoComplete="username"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <Input
+              label="E-Mail"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+            <Input
+              label="Passwort"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              required
+            />
+
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="text-sm text-red-500 text-center bg-red-50 rounded-xl py-2.5 px-3"
+                >
+                  {error}
+                </motion.p>
+              )}
+              {success && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  className="text-sm text-green-600 text-center bg-green-50 rounded-xl py-2.5 px-3"
+                >
+                  {success}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <Button variant="primary" size="lg" type="submit" loading={loading} className="w-full mt-2">
+              {mode === 'login' ? 'Einloggen' : 'Account erstellen'}
+            </Button>
+          </form>
+        </GlassCard>
+      </motion.div>
+    </div>
+  )
+}
