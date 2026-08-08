@@ -64,8 +64,11 @@ export function AddRestaurantPage() {
     const street = [a.road, a.house_number].filter(Boolean).join(' ')
     const address = street ? `${street}, München` : s.display_name.split(',').slice(0, 2).join(',').trim()
     const neighborhood = a.suburb ?? a.neighbourhood ?? a.city_district ?? ''
-    setForm(p => ({ ...p, address, neighborhood }))
-    setCoords({ lat: parseFloat(s.lat), lng: parseFloat(s.lon) })
+    const lat = parseFloat(s.lat)
+    const lng = parseFloat(s.lon)
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+    setForm(p => ({ ...p, address, neighborhood, google_maps_url: p.google_maps_url || mapsUrl }))
+    setCoords({ lat, lng })
     setSuggestions([])
     setShowSuggestions(false)
   }
