@@ -19,6 +19,7 @@ export interface Restaurant {
   google_maps_url: string | null
   website: string | null
   cover_photo_url: string | null
+  has_seitan: boolean
   created_by: string
   created_at: string
   avg_score?: number

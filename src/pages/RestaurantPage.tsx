@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { fetchRestaurant, fetchReviews, fetchCategories } from '../lib/queries'
+import { fetchRestaurant, fetchReviews, fetchCategories, toggleSeitan } from '../lib/queries'
 import { GlassCard } from '../components/ui/GlassCard'
 import { ScoreBadge } from '../components/ui/ScoreBadge'
 import { Avatar } from '../components/ui/Avatar'
@@ -14,6 +14,7 @@ export function RestaurantPage() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { name } = useAuth()
+  const qc = useQueryClient()
 
   const { data: restaurant } = useQuery({
     queryKey: ['restaurant', id],
@@ -37,6 +38,11 @@ export function RestaurantPage() {
   if (!restaurant) return <LoadingState />
 
   const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant.food_type)
+
+  const seitanMut = useMutation({
+    mutationFn: (val: boolean) => toggleSeitan(restaurant.id, val),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['restaurant', id] }),
+  })
 
   const hasReviewed = reviews.some(r => r.user_id === name)
 
@@ -91,6 +97,21 @@ export function RestaurantPage() {
               <Row icon="🌐" text="Website besuchen" link />
             </a>
           )}
+          {/* Seitan toggle */}
+          <button
+            onClick={() => seitanMut.mutate(!restaurant.has_seitan)}
+            className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl transition-all border ${
+              restaurant.has_seitan
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-[#F9F8F5] border-[#E8E6E0] text-[#9B9894]'
+            }`}
+          >
+            <span className="text-base">🌱</span>
+            <span className="text-sm font-medium flex-1">
+              {restaurant.has_seitan ? 'Seitan verfügbar' : 'Kein Seitan'}
+            </span>
+            <span className="text-xs">{restaurant.has_seitan ? '✓' : '+'}</span>
+          </button>
           <div className="pt-1">
             <Button
               variant="primary"

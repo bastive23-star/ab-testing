@@ -21,6 +21,7 @@ function toRestaurant(id: string, d: Record<string, unknown>): Restaurant {
     google_maps_url: (d.googleMapsUrl as string) ?? null,
     website: (d.website as string) ?? null,
     cover_photo_url: (d.coverPhotoUrl as string) ?? null,
+    has_seitan: (d.hasSeitan as boolean) ?? false,
     created_by: d.createdBy as string,
     created_at: (d.createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() ?? '',
     avg_score: (d.avgScore as number) ?? 0,
@@ -104,6 +105,10 @@ export async function fetchReviews(restaurantId: string): Promise<Review[]> {
   return snap.docs
     .map(d => toReview(d.id, d.data() as Record<string, unknown>))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
+export async function toggleSeitan(restaurantId: string, value: boolean): Promise<void> {
+  await updateDoc(doc(db, 'restaurants', restaurantId), { hasSeitan: value })
 }
 
 export async function fetchMyReview(restaurantId: string, userName: string): Promise<Review | null> {
