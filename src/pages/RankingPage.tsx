@@ -19,12 +19,15 @@ export function RankingPage() {
 
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState<string | null>(null)
+  const [seitanOnly, setSeitanOnly] = useState(false)
 
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
   const reviewers = [...new Set(allReviews.map(r => r.user_id))].sort()
 
   const restaurantList = (() => {
-    let list = foodFilter ? restaurants.filter(r => r.food_type === foodFilter) : restaurants
+    let list = restaurants
+    if (foodFilter) list = list.filter(r => r.food_type === foodFilter)
+    if (seitanOnly) list = list.filter(r => r.has_seitan)
 
     if (reviewer) {
       const myReviews = allReviews.filter(r => r.user_id === reviewer)
@@ -66,53 +69,62 @@ export function RankingPage() {
       </motion.div>
 
       {/* Filters */}
-      {(foodTypes.length > 1 || reviewers.length > 0) && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="space-y-2.5 mb-8"
-        >
-          {foodTypes.length > 1 && (
-            <div className="flex flex-wrap gap-1.5">
-              {[null, ...foodTypes].map(t => (
-                <button
-                  key={t ?? 'alle'}
-                  onClick={() => setFoodFilter(t)}
-                  className={cn(
-                    'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
-                    foodFilter === t
-                      ? 'bg-[#111110] text-white'
-                      : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
-                  )}
-                >
-                  {t ?? 'Alle'}
-                </button>
-              ))}
-            </div>
-          )}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+        className="space-y-2.5 mb-8"
+      >
+        {/* Food type + Seitan */}
+        <div className="flex flex-wrap gap-1.5">
+          {[null, ...foodTypes].map(t => (
+            <button
+              key={t ?? 'alle'}
+              onClick={() => setFoodFilter(t)}
+              className={cn(
+                'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
+                foodFilter === t
+                  ? 'bg-[#111110] text-white'
+                  : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
+              )}
+            >
+              {t ?? 'Alle'}
+            </button>
+          ))}
+          <button
+            onClick={() => setSeitanOnly(v => !v)}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
+              seitanOnly
+                ? 'bg-emerald-700 text-white'
+                : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
+            )}
+          >
+            <SeitanLeaf /> Seitan
+          </button>
+        </div>
 
-          {reviewers.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[9px] uppercase tracking-[0.2em] text-[#B8B5B0] font-semibold">Von</span>
-              {[null, ...reviewers].map(r => (
-                <button
-                  key={r ?? 'alle'}
-                  onClick={() => setReviewer(r)}
-                  className={cn(
-                    'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
-                    reviewer === r
-                      ? 'bg-[#C8302A] text-white'
-                      : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
-                  )}
-                >
-                  {r ?? 'Allen'}
-                </button>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      )}
+        {/* Reviewer */}
+        {reviewers.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <span className="text-[9px] uppercase tracking-[0.2em] text-[#B8B5B0] font-semibold">Von</span>
+            {[null, ...reviewers].map(r => (
+              <button
+                key={r ?? 'alle'}
+                onClick={() => setReviewer(r)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all',
+                  reviewer === r
+                    ? 'bg-[#C8302A] text-white'
+                    : 'bg-[#F2F1ED] text-[#6B6560] hover:bg-[#E8E6E0]'
+                )}
+              >
+                {r ?? 'Allen'}
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
 
       {/* List */}
       {isLoading ? (
