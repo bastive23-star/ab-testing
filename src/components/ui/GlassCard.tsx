@@ -11,8 +11,8 @@ export function GlassCard({ variant = 'default', hover = false, className, child
   const base = variant === 'strong' ? 'glass-strong' : variant === 'subtle' ? 'glass-subtle' : 'glass'
   return (
     <motion.div
-      className={cn('rounded-[20px] overflow-hidden relative', base, className)}
-      whileHover={hover ? { scale: 1.01, y: -2 } : undefined}
+      className={cn('rounded-2xl overflow-hidden relative', base, className)}
+      whileHover={hover ? { y: -1 } : undefined}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       {...props}
     >

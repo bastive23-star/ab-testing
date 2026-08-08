@@ -16,19 +16,16 @@ export function Nav() {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe">
       <div className="mx-3 mb-3">
-        <div className="glass-strong rounded-[22px] px-2 py-1.5 flex items-center justify-around">
+        <div className="bg-white border border-[#E8E6E0] rounded-[22px] px-2 py-1.5 flex items-center justify-around shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
           {links.map(({ to, label, icon: Icon, fab }) => {
             const active = to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)
             return fab ? (
               <NavLink key={to} to={to} aria-label="Hinzufügen">
                 <motion.div
                   whileTap={{ scale: 0.9 }}
-                  className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center -my-2',
-                    'bg-[#C8302A] shadow-[0_4px_16px_rgba(200,48,42,0.4),0_1px_0_rgba(255,255,255,0.25)_inset]',
-                  )}
+                  className="w-11 h-11 rounded-full flex items-center justify-center -my-1 bg-[#C8302A] shadow-[0_2px_12px_rgba(200,48,42,0.35)]"
                 >
-                  <Icon className="size-6 text-white" />
+                  <Icon className="size-5 text-white" />
                 </motion.div>
               </NavLink>
             ) : (
@@ -39,11 +36,11 @@ export function Nav() {
               >
                 <div className={cn(
                   'relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200',
-                  active && 'bg-[#C8302A]/12'
+                  active && 'bg-[#F5F4F0]'
                 )}>
-                  <Icon className={cn('size-5 transition-colors', active ? 'text-[#C8302A]' : 'text-[#9E9791]')} />
+                  <Icon className={cn('size-5 transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')} />
                 </div>
-                <span className={cn('text-[10px] font-medium transition-colors', active ? 'text-[#C8302A]' : 'text-[#9E9791]')}>
+                <span className={cn('text-[10px] font-medium transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')}>
                   {label}
                 </span>
               </NavLink>

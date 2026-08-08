@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { fetchRestaurantsWithStats } from '../lib/queries'
-import { GlassCard } from '../components/ui/GlassCard'
-import { ScoreBadge } from '../components/ui/ScoreBadge'
 import { scoreColor } from '../lib/scoring'
 import { cn } from '../lib/utils'
 
@@ -19,106 +17,115 @@ export function RankingPage() {
 
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
   const filtered = filter ? restaurants.filter(r => r.food_type === filter) : restaurants
-  const ranked = filtered.map((r, i) => ({ ...r, rank: i + 1 }))
 
   return (
-    <div className="px-4 pt-12 pb-4 max-w-xl mx-auto">
+    <div className="px-5 pt-14 pb-4 max-w-xl mx-auto">
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="mb-6"
+        transition={{ duration: 0.4 }}
+        className="mb-8"
       >
-        <p className="text-xs font-semibold tracking-[0.15em] uppercase text-[#C8302A] mb-1">München</p>
-        <h1 className="font-serif text-4xl text-[#1A1714] leading-tight">
-          A/B Testing<br />Ranking
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#9B9894] mb-2">München</p>
+        <h1 className="font-serif text-5xl text-[#111110] leading-[1.05]">
+          A/B<br />Testing
         </h1>
-        <p className="text-sm text-[#6B6560] mt-2">
-          {filtered.length} {filtered.length === 1 ? 'Restaurant' : 'Restaurants'} bewertet
-        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <div className="h-px flex-1 bg-[#E8E6E0]" />
+          <span className="text-xs text-[#9B9894]">{filtered.length} Restaurants</span>
+        </div>
       </motion.div>
 
+      {/* Filter */}
       {foodTypes.length > 1 && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-wrap gap-2 mb-5"
+          className="flex flex-wrap gap-1.5 mb-7"
         >
-          <button
-            onClick={() => setFilter(null)}
-            className={cn('px-3 py-1.5 rounded-xl text-sm font-medium transition-all', filter === null ? 'bg-[#C8302A] text-white' : 'glass-subtle text-[#6B6560]')}
-          >
-            Alle
-          </button>
-          {foodTypes.map(t => (
+          {[null, ...foodTypes].map(t => (
             <button
-              key={t}
+              key={t ?? 'alle'}
               onClick={() => setFilter(t)}
-              className={cn('px-3 py-1.5 rounded-xl text-sm font-medium transition-all', filter === t ? 'bg-[#C8302A] text-white' : 'glass-subtle text-[#6B6560]')}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                filter === t
+                  ? 'bg-[#111110] text-white border-[#111110]'
+                  : 'bg-white text-[#5C5B57] border-[#E8E6E0] hover:border-[#C8C6C0]'
+              )}
             >
-              {t}
+              {t ?? 'Alle'}
             </button>
           ))}
         </motion.div>
       )}
 
+      {/* List */}
       {isLoading ? (
         <SkeletonList />
-      ) : ranked.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="space-y-3">
-          {ranked.map((r, i) => (
+        <div>
+          {filtered.map((r, i) => (
             <motion.div
               key={r.id}
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.06, ease: [0.4, 0, 0.2, 1] }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
             >
-              <Link to={`/restaurant/${r.id}`}>
-                <GlassCard hover className="p-4 flex items-center gap-4">
-                  <div className="shrink-0 w-8 text-center">
-                    {i === 0 ? (
-                      <span className="text-2xl leading-none">🥇</span>
-                    ) : i === 1 ? (
-                      <span className="text-2xl leading-none">🥈</span>
-                    ) : i === 2 ? (
-                      <span className="text-2xl leading-none">🥉</span>
-                    ) : (
-                      <span className="text-base font-semibold text-[#9E9791]">#{i + 1}</span>
-                    )}
-                  </div>
+              <Link to={`/restaurant/${r.id}`} className="block group">
+                <div className="py-4 flex items-start gap-4">
+                  {/* Rank */}
+                  <span className="font-serif text-5xl leading-none text-[#E8E6E0] group-hover:text-[#D0CEC8] transition-colors shrink-0 w-14 text-right">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
 
-                  <div className="shrink-0 w-16 h-16 rounded-[14px] overflow-hidden bg-[#EAE7E1]">
-                    {r.cover_photo_url ? (
-                      <img src={r.cover_photo_url} alt={r.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-2xl">🥖</div>
-                    )}
-                  </div>
+                  {/* Main content */}
+                  <div className="flex-1 min-w-0 pt-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="font-serif text-xl text-[#111110] leading-tight group-hover:text-[#C8302A] transition-colors truncate">
+                          {r.name}
+                        </h2>
+                        <p className="text-xs text-[#9B9894] mt-0.5">
+                          {r.neighborhood || r.food_type}
+                          {r.review_count > 0 && ` · ${r.review_count} ${r.review_count === 1 ? 'Review' : 'Reviews'}`}
+                        </p>
+                      </div>
+                      {/* Score */}
+                      <div className="shrink-0 text-right">
+                        <span
+                          className="font-serif text-2xl leading-none tabular-nums"
+                          style={{ color: r.avg_score > 0 ? scoreColor(r.avg_score) : '#9B9894' }}
+                        >
+                          {r.avg_score > 0 ? r.avg_score.toFixed(1) : '—'}
+                        </span>
+                        {i === 0 && r.avg_score > 0 && (
+                          <p className="text-[9px] uppercase tracking-widest text-[#C8302A] mt-0.5">#1</p>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-semibold text-[#1A1714] text-base leading-tight truncate">{r.name}</h2>
-                    <p className="text-xs text-[#9E9791] mt-0.5">{r.neighborhood || r.food_type}</p>
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <div className="h-1.5 flex-1 rounded-full bg-black/8 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${(r.avg_score / 10) * 100}%`,
-                            background: scoreColor(r.avg_score),
-                          }}
+                    {/* Score bar */}
+                    {r.avg_score > 0 && (
+                      <div className="mt-2.5 h-px bg-[#E8E6E0] overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(r.avg_score / 10) * 100}%` }}
+                          transition={{ duration: 0.8, delay: 0.2 + i * 0.05, ease: [0.4, 0, 0.2, 1] }}
+                          className="h-full"
+                          style={{ background: scoreColor(r.avg_score) }}
                         />
                       </div>
-                      <span className="text-[10px] text-[#9E9791] shrink-0">
-                        {r.review_count} {r.review_count === 1 ? 'Review' : 'Reviews'}
-                      </span>
-                    </div>
+                    )}
                   </div>
-
-                  <ScoreBadge score={r.avg_score} size="md" />
-                </GlassCard>
+                </div>
+                {i < filtered.length - 1 && (
+                  <div className="h-px bg-[#F0EEE8] ml-18" />
+                )}
               </Link>
             </motion.div>
           ))}
@@ -130,17 +137,16 @@ export function RankingPage() {
 
 function SkeletonList() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="glass rounded-[20px] p-4 flex items-center gap-4 animate-pulse">
-          <div className="w-8 h-6 rounded bg-black/6" />
-          <div className="w-16 h-16 rounded-[14px] bg-black/6" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-2/3 rounded bg-black/6" />
-            <div className="h-3 w-1/3 rounded bg-black/6" />
-            <div className="h-1.5 w-full rounded-full bg-black/6" />
+    <div>
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="py-4 flex items-start gap-4 animate-pulse">
+          <div className="w-14 h-10 rounded bg-[#F0EEE8]" />
+          <div className="flex-1 space-y-2 pt-1">
+            <div className="h-5 w-2/3 rounded bg-[#F0EEE8]" />
+            <div className="h-3 w-1/3 rounded bg-[#F0EEE8]" />
+            <div className="h-px w-full bg-[#F0EEE8]" />
           </div>
-          <div className="w-12 h-12 rounded-full bg-black/6" />
+          <div className="w-10 h-7 rounded bg-[#F0EEE8]" />
         </div>
       ))}
     </div>
@@ -150,15 +156,13 @@ function SkeletonList() {
 function EmptyState() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="py-16 text-center"
     >
-      <GlassCard className="p-10 text-center">
-        <div className="text-5xl mb-4">🥖</div>
-        <h3 className="font-semibold text-[#1A1714] mb-2">Noch keine Einträge</h3>
-        <p className="text-sm text-[#6B6560]">Füge das erste Restaurant hinzu!</p>
-      </GlassCard>
+      <p className="font-serif text-4xl text-[#E8E6E0] mb-4">—</p>
+      <p className="text-sm text-[#9B9894]">Noch keine Einträge</p>
+      <p className="text-xs text-[#C0BEB8] mt-1">Füge das erste Restaurant hinzu</p>
     </motion.div>
   )
 }
