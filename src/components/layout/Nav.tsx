@@ -6,7 +6,6 @@ const links = [
   { to: '/', label: 'Ranking', icon: TrophyIcon },
   { to: '/map', label: 'Karte', icon: MapIcon },
   { to: '/add', label: '', icon: PlusIcon, fab: true },
-  { to: '/categories', label: 'Kategorien', icon: TagIcon },
   { to: '/profile', label: 'Profil', icon: UserIcon },
 ]
 

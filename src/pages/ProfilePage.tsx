@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { fetchUserReviews } from '../lib/queries'
 import { lock } from '../lib/auth'
 import { getTheme, toggleTheme } from '../lib/theme'
@@ -53,6 +53,16 @@ export function ProfilePage() {
         <StatCard value={new Set(reviews.map(r => r.restaurant_id)).size} label="Orte" />
       </motion.div>
 
+      <NavLink to="/categories">
+        <GlassCard hover className="px-4 py-3.5 flex items-center gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl bg-[#F2F1ED] flex items-center justify-center shrink-0">
+            <TagIcon />
+          </div>
+          <span className="text-sm font-medium text-[#1A1714] flex-1">Kategorien verwalten</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9B9894]"><polyline points="9 18 15 12 9 6"/></svg>
+        </GlassCard>
+      </NavLink>
+
       <div>
         <h2 className="font-semibold text-[#1A1714] mb-3 px-1">Meine Bewertungen</h2>
         {reviews.length === 0 ? (
@@ -81,6 +91,10 @@ export function ProfilePage() {
       </div>
     </div>
   )
+}
+
+function TagIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-[#6B6560]"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 }
 
 function SunIcon() {
