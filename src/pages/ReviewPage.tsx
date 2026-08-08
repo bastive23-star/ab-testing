@@ -22,10 +22,11 @@ export function ReviewPage() {
     queryFn: () => fetchRestaurant(restaurantId!),
     enabled: !!restaurantId,
   })
-  const { data: cats = [] } = useQuery({
+  const { data: allCats = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
   })
+  const cats = allCats.filter(c => c.food_type === null || c.food_type === restaurant?.food_type)
 
   const [scores, setScores] = useState<Record<string, number>>({})
   const [notes, setNotes] = useState('')

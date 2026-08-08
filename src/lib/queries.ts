@@ -9,7 +9,7 @@ import type { Category, Profile, Restaurant, RestaurantWithStats, Review } from 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function toCategory(id: string, d: Record<string, unknown>): Category {
-  return { id, name: d.name as string, weight: d.weight as number, emoji: d.emoji as string, created_by: (d.createdBy as string) ?? null, created_at: (d.createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() ?? '' }
+  return { id, name: d.name as string, weight: d.weight as number, emoji: d.emoji as string, food_type: (d.foodType as string) ?? null, created_by: (d.createdBy as string) ?? null, created_at: (d.createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() ?? '' }
 }
 function toRestaurant(id: string, d: Record<string, unknown>): Restaurant {
   return {
@@ -47,12 +47,13 @@ export async function fetchCategories(): Promise<Category[]> {
   return snap.docs.map(d => toCategory(d.id, d.data() as Record<string, unknown>))
 }
 
-export async function createCategory(data: { name: string; weight: number; emoji: string; created_by: string }): Promise<Category> {
+export async function createCategory(data: { name: string; weight: number; emoji: string; food_type?: string | null; created_by: string }): Promise<Category> {
   const ref = await addDoc(collection(db, 'categories'), {
     name: data.name, weight: data.weight, emoji: data.emoji,
+    foodType: data.food_type ?? null,
     createdBy: data.created_by, createdAt: serverTimestamp(),
   })
-  return { id: ref.id, ...data, created_at: new Date().toISOString() }
+  return { id: ref.id, ...data, food_type: data.food_type ?? null, created_at: new Date().toISOString() }
 }
 
 export async function updateCategory(id: string, data: { name?: string; weight?: number; emoji?: string }): Promise<void> {

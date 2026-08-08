@@ -3,6 +3,7 @@ export interface Category {
   name: string
   weight: number
   emoji: string
+  food_type: string | null
   created_by: string | null
   created_at: string
 }
