@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
@@ -19,13 +19,6 @@ export function RankingPage() {
 
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState<string | null>(null)
-  const [scrollY, setScrollY] = useState(0)
-
-  useEffect(() => {
-    const handle = () => setScrollY(window.scrollY)
-    window.addEventListener('scroll', handle, { passive: true })
-    return () => window.removeEventListener('scroll', handle)
-  }, [])
 
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
   const reviewers = [...new Set(allReviews.map(r => r.user_id))].sort()
@@ -47,26 +40,8 @@ export function RankingPage() {
     return list
   })()
 
-  const logoOpacity = Math.max(0, 0.09 - scrollY * 0.00035)
-  const logoBlur = Math.min(scrollY * 0.04, 12)
-  const logoScale = 1 + scrollY * 0.0004
-
   return (
-    <div className="relative">
-      {/* Logo background */}
-      <div
-        className="fixed inset-0 flex items-center justify-center pointer-events-none z-0"
-        style={{
-          opacity: logoOpacity,
-          filter: `blur(${logoBlur}px)`,
-          transform: `scale(${logoScale})`,
-          transition: 'filter 0.1s linear',
-        }}
-      >
-        <img src="/ab-testing/logo.png" alt="" aria-hidden="true" className="w-[85vw] max-w-sm" draggable={false} />
-      </div>
-
-    <div className="relative z-10 px-5 pt-14 pb-4 max-w-xl mx-auto">
+    <div className="px-5 pt-14 pb-4 max-w-xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
@@ -207,7 +182,6 @@ export function RankingPage() {
           ))}
         </div>
       )}
-    </div>
     </div>
   )
 }

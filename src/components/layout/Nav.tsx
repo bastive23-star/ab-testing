@@ -15,23 +15,23 @@ export function Nav() {
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe">
       <div className="relative mx-3 mb-3">
 
-        {/* Floating FAB — centered above the bar */}
+        {/* FAB — behind the nav bar so it gets cut off at the top edge */}
         <NavLink
           to="/add"
           aria-label="Restaurant hinzufügen"
-          className="absolute left-1/2 -translate-x-1/2 -top-6 z-10"
+          className="absolute left-1/2 -translate-x-1/2 -top-7 z-0"
         >
           <motion.div
             whileTap={{ scale: 0.88 }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className="w-14 h-14 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_6px_28px_rgba(200,48,42,0.45),0_2px_8px_rgba(0,0,0,0.2)]"
+            className="w-14 h-14 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_-4px_20px_rgba(200,48,42,0.5)]"
           >
             <PlusIcon />
           </motion.div>
         </NavLink>
 
-        {/* Tab bar */}
-        <div className="bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] flex items-center justify-around px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+        {/* Tab bar — z-10 so it overlaps the bottom half of the FAB */}
+        <div className="relative z-10 bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] flex items-center justify-around px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
           {tabs.map(({ to, label, icon: Icon }) => {
             const active = to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)
             return (
