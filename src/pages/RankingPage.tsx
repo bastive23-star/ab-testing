@@ -140,9 +140,16 @@ export function RankingPage() {
                   <div className="flex-1 min-w-0 pt-1.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-[#9B9894] mb-1">
-                          {r.food_type}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-[9px] font-bold tracking-[0.22em] uppercase text-[#9B9894]">
+                            {r.food_type}
+                          </p>
+                          {r.has_seitan && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-semibold tracking-wide">
+                              <SeitanLeaf /> Seitan
+                            </span>
+                          )}
+                        </div>
                         <h2 className="font-serif text-[22px] leading-tight text-[#111110] group-hover:text-[#C8302A] transition-colors truncate">
                           {r.name}
                         </h2>
@@ -194,6 +201,10 @@ export function RankingPage() {
       )}
     </div>
   )
+}
+
+function SeitanLeaf() {
+  return <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
 }
 
 function SkeletonList() {
