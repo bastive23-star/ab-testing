@@ -1,3 +1,4 @@
+import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
@@ -37,7 +38,7 @@ export function Nav() {
   )
 }
 
-function Tab({ to, label, icon: Icon, active }: { to: string; label: string; icon: (p: { className?: string }) => JSX.Element; active: boolean }) {
+function Tab({ to, label, icon: Icon, active }: { to: string; label: string; icon: (p: { className?: string }) => React.ReactElement; active: boolean }) {
   return (
     <NavLink to={to} className="flex-1 flex flex-col items-center gap-0.5 py-1.5 px-2">
       <div className={cn(
