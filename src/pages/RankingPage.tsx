@@ -49,13 +49,16 @@ export function RankingPage() {
         transition={{ duration: 0.5 }}
         className="mb-8"
       >
-        <img
-          src="/ab-testing/logo.png"
-          alt="A/B Testing"
-          className="w-40 h-auto -ml-2"
-          draggable={false}
-        />
-        <div className="flex items-center gap-3 -mt-1">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-[3px] h-7 bg-[#C8302A] rounded-full" />
+          <p className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#9B9894]">
+            München · Food Rankings
+          </p>
+        </div>
+        <h1 className="font-serif leading-[0.88] text-[#111110]" style={{ fontSize: 'clamp(52px, 15vw, 72px)' }}>
+          A/B<br />Testing
+        </h1>
+        <div className="flex items-center gap-3 mt-5">
           <div className="h-[1.5px] flex-1 bg-[#111110]" />
           <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9B9894]">
             {restaurantList.length} im Ranking
