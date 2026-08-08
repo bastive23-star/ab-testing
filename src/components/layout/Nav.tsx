@@ -1,6 +1,5 @@
 import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
 export function Nav() {
@@ -10,21 +9,6 @@ export function Nav() {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe">
       <div className="relative mx-3 mb-3">
-
-        {/* FAB — floats centered, fully above nav */}
-        <NavLink
-          to="/add"
-          aria-label="Restaurant hinzufügen"
-          className="absolute left-1/2 -translate-x-1/2 -top-8 z-20"
-        >
-          <motion.div
-            whileTap={{ scale: 0.88 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className="w-14 h-14 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_6px_28px_rgba(200,48,42,0.5),0_2px_8px_rgba(0,0,0,0.15)]"
-          >
-            <PlusIcon />
-          </motion.div>
-        </NavLink>
 
         {/* Tab bar */}
         <div className="bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex items-center">
@@ -59,9 +43,6 @@ function TrophyIcon({ className }: { className?: string }) {
 }
 function MapIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-}
-function PlusIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 }
 function UserIcon({ className }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { fetchRestaurantsWithStats, fetchAllReviews } from '../lib/queries'
 import { scoreColor } from '../lib/scoring'
 import { cn } from '../lib/utils'
@@ -17,6 +17,7 @@ export function RankingPage() {
     queryFn: fetchAllReviews,
   })
 
+  const nav = useNavigate()
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState<string | null>(null)
 
@@ -52,16 +53,26 @@ export function RankingPage() {
         <p className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#9B9894] mb-4">
           München · Food Rankings
         </p>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-end justify-between gap-4">
           <h1 className="font-serif leading-[0.88] text-[#111110]" style={{ fontSize: 'clamp(48px, 13vw, 68px)' }}>
             A/B<br />Testing
           </h1>
-          <img
-            src="/ab-testing/logo.png"
-            alt="A/B Testing"
-            className="w-20 h-20 object-contain shrink-0"
-            draggable={false}
-          />
+          <div className="flex items-center gap-2 pb-1">
+            <img
+              src="/ab-testing/logo.png"
+              alt="A/B Testing"
+              className="w-20 h-20 object-contain shrink-0"
+              draggable={false}
+            />
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => nav('/add')}
+              aria-label="Restaurant hinzufügen"
+              className="w-10 h-10 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_4px_16px_rgba(200,48,42,0.4)] shrink-0"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </motion.button>
+          </div>
         </div>
         <div className="flex items-center gap-3 mt-5">
           <div className="h-[1.5px] flex-1 bg-[#111110]" />
