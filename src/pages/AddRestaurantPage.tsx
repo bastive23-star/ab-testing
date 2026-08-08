@@ -47,7 +47,7 @@ export function AddRestaurantPage() {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1&countrycodes=de&viewbox=11.36,48.06,11.72,48.24&bounded=1`,
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ' München')}&format=json&limit=5&addressdetails=1&countrycodes=de`,
           { headers: { 'Accept-Language': 'de', 'User-Agent': 'ab-testing-app' } },
         )
         const data: NominatimResult[] = await res.json()
