@@ -41,29 +41,35 @@ export function RestaurantPage() {
   return (
     <div className="pb-4">
       {/* Hero */}
-      <div className="relative h-72 bg-[#EAE7E1]">
+      <div className="relative h-72 overflow-hidden">
         {restaurant.cover_photo_url ? (
           <img src={restaurant.cover_photo_url} alt={restaurant.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-7xl">🥖</div>
+          <HeroCover name={restaurant.name} foodType={restaurant.food_type} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         {/* Back */}
         <button
           onClick={() => nav(-1)}
-          className="absolute top-12 left-4 glass rounded-full p-2.5"
+          className="absolute top-12 left-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full p-2.5"
           aria-label="Zurück"
         >
           <ChevronLeft />
         </button>
         {/* Score overlay */}
-        <div className="absolute bottom-4 right-4">
-          <ScoreBadge score={avgScore} size="lg" showLabel />
+        <div className="absolute bottom-4 right-4 text-right">
+          {avgScore > 0 && (
+            <div>
+              <span className="font-serif text-4xl text-white leading-none">{avgScore.toFixed(1)}</span>
+              <p className="text-[10px] uppercase tracking-widest text-white/70 mt-0.5">{reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}</p>
+            </div>
+          )}
         </div>
         {/* Title */}
-        <div className="absolute bottom-4 left-4 right-20">
-          <h1 className="font-serif text-2xl text-white leading-tight drop-shadow">{restaurant.name}</h1>
-          <p className="text-sm text-white/80 mt-0.5">{restaurant.neighborhood}</p>
+        <div className="absolute bottom-4 left-4 right-24">
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 mb-1">{restaurant.food_type}</p>
+          <h1 className="font-serif text-2xl text-white leading-tight">{restaurant.name}</h1>
+          {restaurant.neighborhood && <p className="text-sm text-white/70 mt-0.5">{restaurant.neighborhood}</p>}
         </div>
       </div>
 
@@ -210,6 +216,46 @@ function LoadingState() {
         <div className="h-32 rounded-[20px] bg-black/6" />
         <div className="h-48 rounded-[20px] bg-black/6" />
       </div>
+    </div>
+  )
+}
+
+function HeroCover({ name, foodType }: { name: string; foodType: string }) {
+  const palettes: Record<string, [string, string]> = {
+    'Bánh Mì': ['#2D1B0E', '#8B4513'],
+    'Ramen':   ['#1A0A0A', '#8B1A1A'],
+    'Pizza':   ['#1A1200', '#8B6914'],
+    'Burger':  ['#0D1A0D', '#2D5A1B'],
+    'Sushi':   ['#001A1A', '#0D5C5C'],
+    'Döner':   ['#1A0D00', '#7A3B00'],
+    'Tacos':   ['#1A0A1A', '#6B2D6B'],
+  }
+  const [from, to] = palettes[foodType] ?? ['#111110', '#3D3B38']
+
+  // Derive a unique large letter from the name
+  const initial = name.trim()[0]?.toUpperCase() ?? '?'
+
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center overflow-hidden"
+      style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
+    >
+      {/* Large background initial */}
+      <span
+        className="font-serif select-none pointer-events-none absolute opacity-10"
+        style={{ fontSize: '28vw', color: 'white', lineHeight: 1, letterSpacing: '-0.05em' }}
+        aria-hidden="true"
+      >
+        {initial}
+      </span>
+      {/* Subtle noise texture overlay */}
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          backgroundSize: '200px 200px',
+        }}
+      />
     </div>
   )
 }
