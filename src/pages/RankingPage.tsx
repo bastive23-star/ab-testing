@@ -77,16 +77,16 @@ export function RankingPage() {
         <p className="text-[10px] font-semibold tracking-[0.28em] uppercase text-[#9B9894] mb-4">
           München · Food Rankings
         </p>
-        <div className="flex items-center gap-4">
-          <img
-            src="/ab-testing/logo.png"
-            alt="A/B Testing"
-            className="w-16 h-16 object-contain shrink-0"
-            draggable={false}
-          />
+        <div className="flex items-center justify-between gap-4">
           <h1 className="font-serif leading-[0.88] text-[#111110]" style={{ fontSize: 'clamp(48px, 13vw, 68px)' }}>
             A/B<br />Testing
           </h1>
+          <img
+            src="/ab-testing/logo.png"
+            alt="A/B Testing"
+            className="w-20 h-20 object-contain shrink-0"
+            draggable={false}
+          />
         </div>
         <div className="flex items-center gap-3 mt-5">
           <div className="h-[1.5px] flex-1 bg-[#111110]" />
