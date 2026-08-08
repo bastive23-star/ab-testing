@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { fetchRestaurant, fetchReviews, fetchCategories, toggleSeitan } from '../lib/queries'
+import { fetchRestaurant, fetchReviews, fetchCategories } from '../lib/queries'
 import { GlassCard } from '../components/ui/GlassCard'
 import { ScoreBadge } from '../components/ui/ScoreBadge'
 import { Avatar } from '../components/ui/Avatar'
@@ -14,8 +14,6 @@ export function RestaurantPage() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
   const { name } = useAuth()
-  const qc = useQueryClient()
-
   const { data: restaurant } = useQuery({
     queryKey: ['restaurant', id],
     queryFn: () => fetchRestaurant(id!),
@@ -34,11 +32,6 @@ export function RestaurantPage() {
   const avgScore = reviews.length
     ? reviews.reduce((s, r) => s + r.total_score, 0) / reviews.length
     : 0
-
-  const seitanMut = useMutation({
-    mutationFn: (val: boolean) => toggleSeitan(restaurant?.id ?? '', val),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['restaurant', id] }),
-  })
 
   if (!restaurant) return <LoadingState />
 
@@ -111,45 +104,20 @@ export function RestaurantPage() {
             </div>
           )}
 
-          {/* Seitan toggle — big, bold, unmissable */}
-          <div className="p-3 pt-3">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              onClick={() => seitanMut.mutate(!restaurant.has_seitan)}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 ${
-                restaurant.has_seitan
-                  ? 'bg-[#0B2911]'
-                  : 'bg-[#F2F1ED]'
-              }`}
-            >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
-                restaurant.has_seitan ? 'bg-[#17421E]' : 'bg-[#E5E3DE]'
-              }`}>
-                <LeafIcon className={`transition-colors duration-300 ${restaurant.has_seitan ? 'text-emerald-400' : 'text-[#B8B5B0]'}`} />
+          {/* Seitan badge — static display only */}
+          {restaurant.has_seitan && (
+            <div className="px-4 pb-1">
+              <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#0B2911]">
+                <div className="w-9 h-9 rounded-xl bg-[#17421E] flex items-center justify-center shrink-0">
+                  <LeafIcon className="text-emerald-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-white">Seitan verfügbar</p>
+                  <p className="text-xs mt-0.5 text-emerald-400/70">Pflanzliche Alternative ✓</p>
+                </div>
               </div>
-              <div className="flex-1 text-left">
-                <p className={`font-semibold text-[15px] leading-tight transition-colors duration-300 ${
-                  restaurant.has_seitan ? 'text-white' : 'text-[#9B9894]'
-                }`}>
-                  {restaurant.has_seitan ? 'Seitan verfügbar' : 'Kein Seitan'}
-                </p>
-                <p className={`text-xs mt-1 transition-colors duration-300 ${
-                  restaurant.has_seitan ? 'text-emerald-400/70' : 'text-[#C0BDB8]'
-                }`}>
-                  {restaurant.has_seitan ? 'Pflanzliche Alternative ✓' : 'Tippen zum Ändern'}
-                </p>
-              </div>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                restaurant.has_seitan ? 'bg-emerald-500/20' : 'bg-black/8'
-              }`}>
-                {restaurant.has_seitan
-                  ? <CheckIcon className="text-emerald-400" />
-                  : <PlusSmIcon className="text-[#9B9894]" />
-                }
-              </div>
-            </motion.button>
-          </div>
+            </div>
+          )}
 
           {/* Review CTA */}
           <div className="px-3 pb-3">
@@ -278,12 +246,6 @@ function ArrowRightIcon({ className }: { className?: string }) {
 }
 function LeafIcon({ className }: { className?: string }) {
   return <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
-}
-function CheckIcon({ className }: { className?: string }) {
-  return <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-}
-function PlusSmIcon({ className }: { className?: string }) {
-  return <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
 }
 
 function LoadingState() {

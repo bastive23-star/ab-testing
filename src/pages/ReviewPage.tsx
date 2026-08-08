@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { fetchRestaurant, fetchCategories, fetchMyReview, submitReview, createCategory } from '../lib/queries'
+import { fetchRestaurant, fetchCategories, fetchMyReview, submitReview, createCategory, toggleSeitan } from '../lib/queries'
 import { calcTotal } from '../lib/scoring'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
@@ -42,6 +42,7 @@ export function ReviewPage() {
   const needsChoice = hasMeat && hasVeg
 
   const [meatOrVeg, setMeatOrVeg] = useState<'fleisch' | 'veg' | null>(null)
+  const [hadSeitan, setHadSeitan] = useState(false)
 
   const cats = needsChoice && meatOrVeg
     ? allFilteredCats.filter(c => {
@@ -68,7 +69,10 @@ export function ReviewPage() {
       const hadVeg = existingReview.scores && allFilteredCats.find(c => c.name === 'Veg. Alternative') &&
         existingReview.scores[allFilteredCats.find(c => c.name === 'Veg. Alternative')!.id] !== undefined
       if (hadMeat) setMeatOrVeg('fleisch')
-      else if (hadVeg) setMeatOrVeg('veg')
+      else if (hadVeg) {
+        setMeatOrVeg('veg')
+        setHadSeitan(restaurant?.has_seitan ?? false)
+      }
       setPrefilled(true)
     }
   }, [existingReview, prefilled])
@@ -99,7 +103,10 @@ export function ReviewPage() {
   const totalScore = calcTotal(Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])), cats)
 
   const mut = useMutation({
-    mutationFn: () => submitReview(restaurantId!, name, Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])), cats, notes, visitedAt),
+    mutationFn: async () => {
+      await submitReview(restaurantId!, name, Object.fromEntries(cats.map(c => [c.id, scores[c.id] ?? 5])), cats, notes, visitedAt)
+      if (meatOrVeg === 'veg') await toggleSeitan(restaurantId!, hadSeitan)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reviews', restaurantId] })
       qc.invalidateQueries({ queryKey: ['my-review', restaurantId, name] })
@@ -153,6 +160,44 @@ export function ReviewPage() {
                     🌱 Veggie
                   </button>
                 </div>
+
+                {/* Seitan sub-toggle — only when veggie selected */}
+                <AnimatePresence>
+                  {meatOrVeg === 'veg' && (
+                    <motion.button
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      type="button"
+                      onClick={() => setHadSeitan(v => !v)}
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 ${
+                        hadSeitan ? 'bg-[#0B2911]' : 'bg-[#F2F1ED]'
+                      }`}
+                    >
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
+                        hadSeitan ? 'bg-[#17421E]' : 'bg-[#E5E3DE]'
+                      }`}>
+                        <LeafIcon className={hadSeitan ? 'text-emerald-400' : 'text-[#B8B5B0]'} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className={`font-semibold text-sm transition-colors duration-300 ${hadSeitan ? 'text-white' : 'text-[#9B9894]'}`}>
+                          War Seitan
+                        </p>
+                        <p className={`text-xs mt-0.5 transition-colors duration-300 ${hadSeitan ? 'text-emerald-400/70' : 'text-[#C0BDB8]'}`}>
+                          {hadSeitan ? 'Seitan verfügbar ✓' : 'Tippen wenn es Seitan gab'}
+                        </p>
+                      </div>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                        hadSeitan ? 'bg-emerald-500/20' : 'bg-black/8'
+                      }`}>
+                        {hadSeitan
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><polyline points="20 6 9 17 4 12"/></svg>
+                          : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-[#9B9894]"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        }
+                      </div>
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
@@ -222,4 +267,7 @@ export function ReviewPage() {
 
 function ChevronLeft() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+}
+function LeafIcon({ className }: { className?: string }) {
+  return <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
 }
