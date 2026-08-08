@@ -93,7 +93,7 @@ export async function createRestaurant(data: {
     coverPhotoUrl: data.cover_photo_url, createdBy: data.created_by,
     avgScore: 0, reviewCount: 0, createdAt: serverTimestamp(),
   })
-  return { id: ref.id, ...data, avg_score: 0, review_count: 0, created_at: new Date().toISOString() }
+  return { id: ref.id, ...data, has_seitan: false, avg_score: 0, review_count: 0, created_at: new Date().toISOString() }
 }
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
