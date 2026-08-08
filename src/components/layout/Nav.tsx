@@ -2,60 +2,54 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
-const tabs = [
-  { to: '/', label: 'Ranking', icon: TrophyIcon },
-  { to: '/map', label: 'Karte', icon: MapIcon },
-  { to: '/profile', label: 'Profil', icon: UserIcon },
-]
-
 export function Nav() {
   const loc = useLocation()
+  const active = (to: string) => to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe">
       <div className="relative mx-3 mb-3">
 
-        {/* FAB — behind the nav bar so it gets cut off at the top edge */}
+        {/* FAB — floats centered, fully above nav */}
         <NavLink
           to="/add"
           aria-label="Restaurant hinzufügen"
-          className="absolute left-1/2 -translate-x-1/2 -top-7 z-0"
+          className="absolute left-1/2 -translate-x-1/2 -top-8 z-20"
         >
           <motion.div
             whileTap={{ scale: 0.88 }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            className="w-14 h-14 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_-4px_20px_rgba(200,48,42,0.5)]"
+            className="w-14 h-14 rounded-full bg-[#C8302A] flex items-center justify-center shadow-[0_6px_28px_rgba(200,48,42,0.5),0_2px_8px_rgba(0,0,0,0.15)]"
           >
             <PlusIcon />
           </motion.div>
         </NavLink>
 
-        {/* Tab bar — z-10 so it overlaps the bottom half of the FAB */}
-        <div className="relative z-10 bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] flex items-center justify-around px-2 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-          {tabs.map(({ to, label, icon: Icon }) => {
-            const active = to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to)
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                className="flex flex-col items-center gap-0.5 py-1 px-3 min-w-[64px]"
-              >
-                <div className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200',
-                  active && 'bg-[#F5F4F0] dark:bg-[#2A2724]'
-                )}>
-                  <Icon className={cn('size-5 transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')} />
-                </div>
-                <span className={cn('text-[10px] font-medium transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')}>
-                  {label}
-                </span>
-              </NavLink>
-            )
-          })}
+        {/* Tab bar */}
+        <div className="bg-white dark:bg-[#1C1A18] border border-[#E8E6E0] dark:border-[#2D2B27] rounded-[22px] shadow-[0_4px_24px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex items-center">
+          <Tab to="/" label="Ranking" icon={TrophyIcon} active={active('/')} />
+          <Tab to="/map" label="Karte" icon={MapIcon} active={active('/map')} />
+          <Tab to="/profile" label="Profil" icon={UserIcon} active={active('/profile')} />
         </div>
 
       </div>
     </nav>
+  )
+}
+
+function Tab({ to, label, icon: Icon, active }: { to: string; label: string; icon: (p: { className?: string }) => JSX.Element; active: boolean }) {
+  return (
+    <NavLink to={to} className="flex-1 flex flex-col items-center gap-0.5 py-1.5 px-2">
+      <div className={cn(
+        'flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200',
+        active && 'bg-[#F5F4F0] dark:bg-[#2A2724]'
+      )}>
+        <Icon className={cn('size-5 transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')} />
+      </div>
+      <span className={cn('text-[10px] font-medium transition-colors', active ? 'text-[#C8302A]' : 'text-[#9B9894]')}>
+        {label}
+      </span>
+    </NavLink>
   )
 }
 
