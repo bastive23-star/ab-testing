@@ -14,7 +14,7 @@ const PEEK = 52
 // Full open height — sheet sits above nav (76px) and shows most of the screen
 const OPEN = typeof window !== 'undefined' ? Math.round(window.innerHeight * 0.62) : 480
 // Nav bar height offset
-const NAV = 76
+const NAV = 112
 
 function createMarkerIcon(score: number, highlighted = false) {
   const color = highlighted ? '#C8302A' : scoreColor(score)
@@ -107,7 +107,7 @@ export function MapPage() {
   }
 
   return (
-    <div className="relative" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div className="relative" style={{ height: '100dvh' }}>
       {/* Full-screen map */}
       <MapContainer
         center={[48.1351, 11.582]}
@@ -153,7 +153,7 @@ export function MapPage() {
         ))}
       </MapContainer>
 
-      {/* Bottom Sheet — fixed so it sits above the nav (z-50), below nav in z-order */}
+      {/* Bottom Sheet — absolute, z-45 so nav (z-50) stays on top */}
       <motion.div
         drag="y"
         dragControls={dragControls}
@@ -165,10 +165,10 @@ export function MapPage() {
           y,
           height: OPEN,
           bottom: NAV,
-          position: 'fixed',
+          position: 'absolute',
           left: 0,
           right: 0,
-          zIndex: 40,
+          zIndex: 45,
           borderRadius: '20px 20px 0 0',
           background: 'rgba(255,255,255,0.97)',
           backdropFilter: 'blur(24px)',
