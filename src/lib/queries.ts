@@ -96,6 +96,22 @@ export async function createRestaurant(data: {
   return { id: ref.id, ...data, has_seitan: false, avg_score: 0, review_count: 0, created_at: new Date().toISOString() }
 }
 
+export async function updateRestaurant(id: string, data: {
+  name: string; food_type: string; address: string; neighborhood: string;
+  lat: number | null; lng: number | null;
+  google_maps_url: string | null; website: string | null;
+}): Promise<void> {
+  await updateDoc(doc(db, 'restaurants', id), {
+    name: data.name, foodType: data.food_type, address: data.address,
+    neighborhood: data.neighborhood, lat: data.lat, lng: data.lng,
+    googleMapsUrl: data.google_maps_url, website: data.website,
+  })
+}
+
+export async function deleteRestaurant(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'restaurants', id))
+}
+
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
 export async function fetchReviews(restaurantId: string): Promise<Review[]> {

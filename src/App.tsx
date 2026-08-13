@@ -10,6 +10,7 @@ import { ReviewPage } from './pages/ReviewPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { AuthPage } from './pages/AuthPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { EditRestaurantPage } from './pages/EditRestaurantPage'
 
 const MapPage = lazy(() => import('./pages/MapPage').then(m => ({ default: m.MapPage })))
 
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="map" element={<Suspense fallback={null}><MapPage /></Suspense>} />
               <Route path="add" element={<AddRestaurantPage />} />
               <Route path="restaurant/:id" element={<RestaurantPage />} />
+              <Route path="restaurant/:id/edit" element={<EditRestaurantPage />} />
               <Route path="review/:restaurantId" element={<ReviewPage />} />
               <Route path="categories" element={<CategoriesPage />} />
               <Route path="profile" element={<ProfilePage />} />
