@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { fetchRestaurantsWithStats, fetchAllReviews } from '../lib/queries'
-import { scoreColor } from '../lib/scoring'
+import { fetchRestaurantsWithStats, fetchAllReviews, fetchCategories } from '../lib/queries'
+import { scoreColor, calcTotal } from '../lib/scoring'
 import { cn } from '../lib/utils'
 
 export function RankingPage() {
@@ -19,18 +19,42 @@ export function RankingPage() {
 
   const [foodFilter, setFoodFilter] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState<string | null>(null)
+  const [toGo, setToGo] = useState(false)
+
+  const { data: allCats = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+    enabled: toGo,
+  })
 
   const foodTypes = [...new Set(restaurants.map(r => r.food_type))].sort()
   const reviewers = [...new Set(allReviews.map(r => r.user_id))].sort()
 
   const restaurantList = (() => {
     let list = restaurants
+
+    if (toGo && allCats.length > 0) {
+      const catsNoAmbiente = allCats.filter(c => c.name !== 'Ambiente')
+      list = list.map(r => {
+        const rReviews = allReviews.filter(rev => rev.restaurant_id === r.id)
+        if (rReviews.length === 0) return r
+        const scores = rReviews.map(rev => calcTotal(rev.scores, catsNoAmbiente))
+        const avg = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+        return { ...r, avg_score: avg }
+      }).sort((a, b) => b.avg_score - a.avg_score)
+    }
+
     if (foodFilter) list = list.filter(r => r.food_type === foodFilter)
 
     if (reviewer) {
       const myReviews = allReviews.filter(r => r.user_id === reviewer)
       const myScoreMap: Record<string, number> = {}
-      for (const rev of myReviews) myScoreMap[rev.restaurant_id] = rev.total_score
+      if (toGo && allCats.length > 0) {
+        const catsNoAmbiente = allCats.filter(c => c.name !== 'Ambiente')
+        for (const rev of myReviews) myScoreMap[rev.restaurant_id] = calcTotal(rev.scores, catsNoAmbiente)
+      } else {
+        for (const rev of myReviews) myScoreMap[rev.restaurant_id] = rev.total_score
+      }
       list = list
         .filter(r => myScoreMap[r.id] !== undefined)
         .map(r => ({ ...r, avg_score: myScoreMap[r.id], review_count: 1 }))
@@ -95,6 +119,11 @@ export function RankingPage() {
             ))}
           </FilterRow>
         )}
+
+        <FilterRow label="Modus">
+          <Chip active={!toGo} onClick={() => setToGo(false)}>Dine In</Chip>
+          <Chip active={toGo} onClick={() => setToGo(true)}>To Go</Chip>
+        </FilterRow>
       </motion.div>
 
       {/* List */}
