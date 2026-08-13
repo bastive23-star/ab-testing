@@ -36,15 +36,15 @@ function createMarkerIcon(score: number, highlighted = false) {
   })
 }
 
-function MapController({ flyCoords, panCoords }: {
+function MapController({ flyCoords, panCoords, fitMarkers }: {
   flyCoords: [number, number] | null
   panCoords: [number, number] | null
+  fitMarkers: [number, number][] | null
 }) {
   const map = useMap()
 
   useEffect(() => {
     if (!flyCoords) return
-    // Ensure Leaflet knows current size before flying
     map.invalidateSize({ animate: false })
     const t = setTimeout(() => map.flyTo(flyCoords, 16, { duration: 0.6 }), 60)
     return () => clearTimeout(t)
@@ -56,6 +56,19 @@ function MapController({ flyCoords, panCoords }: {
     const t = setTimeout(() => map.setView(panCoords, map.getZoom(), { animate: true }), 60)
     return () => clearTimeout(t)
   }, [panCoords]) // eslint-disable-line
+
+  useEffect(() => {
+    if (!fitMarkers || fitMarkers.length === 0) return
+    map.invalidateSize({ animate: false })
+    const t = setTimeout(() => {
+      if (fitMarkers.length === 1) {
+        map.flyTo(fitMarkers[0], 14, { duration: 0.6 })
+      } else {
+        map.flyToBounds(fitMarkers as L.LatLngTuple[], { padding: [48, 48], maxZoom: 15, duration: 0.7 })
+      }
+    }, 60)
+    return () => clearTimeout(t)
+  }, [fitMarkers]) // eslint-disable-line
 
   return null
 }
@@ -85,6 +98,7 @@ export function MapPage() {
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const [flyCoords, setFlyCoords] = useState<[number, number] | null>(null)
   const [panCoords, setPanCoords] = useState<[number, number] | null>(null)
+  const [fitMarkers, setFitMarkers] = useState<[number, number][] | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
 
   const [heights, setHeights] = useState({ map: 0, list: 0 })
@@ -120,9 +134,20 @@ export function MapPage() {
     }, 220)
   }, [sorted, highlighted])
 
+  function applyFilter(t: string | null) {
+    setFoodFilter(t)
+    setHighlighted(null)
+    const coords = (t ? withCoords.filter(r => r.food_type === t) : withCoords)
+      .filter(r => r.lat && r.lng)
+      .map(r => [r.lat!, r.lng!] as [number, number])
+    setFitMarkers(coords.length > 0 ? coords : null)
+    setFlyCoords(null)
+    setPanCoords(null)
+  }
+
   function tap(r: RestaurantWithStats) {
     setHighlighted(r.id)
-    if (r.lat && r.lng) { setFlyCoords([r.lat, r.lng]); setPanCoords(null) }
+    if (r.lat && r.lng) { setFlyCoords([r.lat, r.lng]); setPanCoords(null); setFitMarkers(null) }
   }
 
   const mapH = fullscreen ? heights.map + heights.list : heights.map
@@ -155,7 +180,7 @@ export function MapPage() {
               maxZoom={19}
             />
             <MapInvalidator trigger={`${mapH}-${fullscreen}`} />
-            <MapController flyCoords={flyCoords} panCoords={panCoords} />
+            <MapController flyCoords={flyCoords} panCoords={panCoords} fitMarkers={fitMarkers} />
             {filtered.map(r => (
               <Marker
                 key={r.id}
@@ -198,7 +223,7 @@ export function MapPage() {
               className="flex gap-1.5 overflow-x-auto no-scrollbar"
             >
               {[null, ...foodTypes].map(t => (
-                <button key={t ?? 'alle'} onClick={() => setFoodFilter(t)}
+                <button key={t ?? 'alle'} onClick={() => applyFilter(t)}
                   className={cn('px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 shadow-sm backdrop-blur-sm border transition-all',
                     foodFilter === t ? 'bg-[#111110] text-white border-[#111110]' : 'bg-white/90 text-[#6B6560] border-[#E8E6E0]')}>
                   {t ?? 'Alle'}
@@ -222,7 +247,7 @@ export function MapPage() {
         <div className="px-4 pt-3 pb-2 border-b border-[#F0EEE8] shrink-0">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-2">
             {[null, ...foodTypes].map(t => (
-              <button key={t ?? 'alle'} onClick={() => setFoodFilter(t)}
+              <button key={t ?? 'alle'} onClick={() => applyFilter(t)}
                 className={cn('px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all',
                   foodFilter === t ? 'bg-[#111110] text-white' : 'bg-[#F2F1ED] text-[#6B6560]')}>
                 {t ?? 'Alle'}
