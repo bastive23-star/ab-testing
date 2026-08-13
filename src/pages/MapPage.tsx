@@ -108,11 +108,12 @@ export function MapPage() {
 
   return (
     <div className="relative" style={{ height: '100dvh' }}>
-      {/* Full-screen map */}
+      {/* Map isolated in its own stacking context (z:0) so sheet can sit above it */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
       <MapContainer
         center={[48.1351, 11.582]}
         zoom={13}
-        style={{ width: '100%', height: '100dvh' }}
+        style={{ width: '100%', height: '100%' }}
         zoomControl={false}
       >
         <TileLayer
@@ -152,6 +153,7 @@ export function MapPage() {
           </Marker>
         ))}
       </MapContainer>
+      </div>
 
       {/* Bottom Sheet — absolute, z-45 so nav (z-50) stays on top */}
       <motion.div
