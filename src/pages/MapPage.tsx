@@ -2,49 +2,38 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import L from 'leaflet'
 import { fetchRestaurantsWithStats } from '../lib/queries'
 import { scoreColor, scoreLabel } from '../lib/scoring'
 import { cn } from '../lib/utils'
 import type { RestaurantWithStats } from '../types'
 
-// Nav height (pill + margins + safe area)
 const NAV_H = 112
 
 function createMarkerIcon(score: number, highlighted = false) {
   const color = highlighted ? '#C8302A' : scoreColor(score)
   const size = highlighted ? 48 : 38
+  // Circle is at cy=21 in a 0 0 48 58 viewBox — anchor there so flyTo centres the badge
+  const circleY = Math.round(size * 1.2 * 21 / 58)
   const r = highlighted ? 14 : 10
   const fs = highlighted ? 10.5 : 9
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${Math.round(size * 1.2)}" viewBox="0 0 48 58">
-    <defs><filter id="s" x="-50%" y="-30%" width="200%" height="200%">
+    <defs><filter id="s${size}" x="-50%" y="-30%" width="200%" height="200%">
       <feDropShadow dx="0" dy="3" stdDeviation="${highlighted ? 6 : 3}" flood-color="${highlighted ? 'rgba(200,48,42,0.4)' : 'rgba(0,0,0,0.2)'}"/>
     </filter></defs>
     <path d="M24 2C13.507 2 5 10.507 5 21c0 12.5 19 35 19 35S43 33.5 43 21C43 10.507 34.493 2 24 2z"
-      fill="${color}" filter="url(#s)"${highlighted ? ' stroke="white" stroke-width="1.5"' : ''}/>
+      fill="${color}" filter="url(#s${size})"${highlighted ? ' stroke="white" stroke-width="1.5"' : ''}/>
     <circle cx="24" cy="21" r="${r}" fill="white"/>
     <text x="24" y="25" text-anchor="middle" font-size="${fs}" font-weight="700"
       font-family="Inter,system-ui,sans-serif" fill="${color}">${score > 0 ? score.toFixed(1) : '–'}</text>
   </svg>`
-  // Anchor at the centre of the score circle (cy=21 in a 58-tall viewBox)
-  const circleY = Math.round(size * 1.2 * 21 / 58)
   return L.divIcon({
     html: svg, className: '',
     iconSize: [size, Math.round(size * 1.2)],
     iconAnchor: [size / 2, circleY],
-    popupAnchor: [0, -circleY - 4],
+    popupAnchor: [0, -circleY - 8],
   })
-}
-
-// Tells Leaflet to recalculate its size after the container resizes
-function MapResizer({ trigger }: { trigger: unknown }) {
-  const map = useMap()
-  useEffect(() => {
-    const t = setTimeout(() => map.invalidateSize(), 50)
-    return () => clearTimeout(t)
-  }, [trigger, map])
-  return null
 }
 
 function MapController({ flyCoords, panCoords }: {
@@ -52,15 +41,36 @@ function MapController({ flyCoords, panCoords }: {
   panCoords: [number, number] | null
 }) {
   const map = useMap()
+
   useEffect(() => {
-    if (flyCoords) map.flyTo(flyCoords, 16, { duration: 0.7, animate: true })
+    if (!flyCoords) return
+    // Ensure Leaflet knows current size before flying
+    map.invalidateSize({ animate: false })
+    const t = setTimeout(() => map.flyTo(flyCoords, 16, { duration: 0.6 }), 60)
+    return () => clearTimeout(t)
   }, [flyCoords]) // eslint-disable-line
+
   useEffect(() => {
-    if (panCoords) map.setView(panCoords, map.getZoom(), { animate: true, duration: 0.4 })
+    if (!panCoords) return
+    map.invalidateSize({ animate: false })
+    const t = setTimeout(() => map.setView(panCoords, map.getZoom(), { animate: true }), 60)
+    return () => clearTimeout(t)
   }, [panCoords]) // eslint-disable-line
+
   return null
 }
 
+function MapInvalidator({ trigger }: { trigger: unknown }) {
+  const map = useMap()
+  useEffect(() => {
+    // Call multiple times to catch all frames of CSS height transition (300ms)
+    const t1 = setTimeout(() => map.invalidateSize({ animate: false }), 50)
+    const t2 = setTimeout(() => map.invalidateSize({ animate: false }), 160)
+    const t3 = setTimeout(() => map.invalidateSize({ animate: false }), 320)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [trigger, map])
+  return null
+}
 
 export function MapPage() {
   const { data: restaurants = [] } = useQuery({
@@ -77,17 +87,15 @@ export function MapPage() {
   const [panCoords, setPanCoords] = useState<[number, number] | null>(null)
   const [fullscreen, setFullscreen] = useState(false)
 
-  // Pixel heights computed once from viewport
-  const [heights, setHeights] = useState({ map: 0, total: 0 })
+  const [heights, setHeights] = useState({ map: 0, list: 0 })
   useEffect(() => {
-    const total = window.innerHeight - NAV_H
-    setHeights({ map: Math.round(total * 0.42), total })
+    const avail = window.innerHeight - NAV_H
+    setHeights({ map: Math.round(avail * 0.42), list: Math.round(avail * 0.58) })
   }, [])
 
   const filtered = foodFilter ? withCoords.filter(r => r.food_type === foodFilter) : withCoords
   const sorted = [...filtered].sort((a, b) => b.avg_score - a.avg_score)
 
-  // Scroll → debounced panTo
   const listRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Record<string, HTMLElement | null>>({})
   const panTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -108,7 +116,7 @@ export function MapPage() {
     if (panTimer.current) clearTimeout(panTimer.current)
     panTimer.current = setTimeout(() => {
       const r = sorted.find(r => r.id === nearest)
-      if (r?.lat && r?.lng) setPanCoords([r.lat, r.lng])
+      if (r?.lat && r?.lng) { setPanCoords([r.lat, r.lng]); setFlyCoords(null) }
     }, 220)
   }, [sorted, highlighted])
 
@@ -117,78 +125,76 @@ export function MapPage() {
     if (r.lat && r.lng) { setFlyCoords([r.lat, r.lng]); setPanCoords(null) }
   }
 
-  const mapPx = fullscreen ? heights.total : heights.map
-  const listPx = heights.total - heights.map
+  const mapH = fullscreen ? heights.map + heights.list : heights.map
+  const listH = fullscreen ? 0 : heights.list
 
-  // Don't render until we have real pixel values
-  if (heights.total === 0) return null
+  if (heights.map === 0) return null
 
   return (
-    // Full-page fixed container — sits below nav (z-50)
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 30,
-      display: 'flex', flexDirection: 'column',
-    }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 30, display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Map ─────────────────────────────────────────── */}
-      <motion.div
-        animate={{ height: mapPx }}
-        transition={{ type: 'spring', stiffness: 340, damping: 36 }}
-        style={{ position: 'relative', flexShrink: 0, overflow: 'hidden' }}
-      >
-        <MapContainer
-          center={[48.1351, 11.582]}
-          zoom={13}
-          style={{ width: '100%', height: '100%' }}
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            maxZoom={19}
-          />
-          <MapResizer trigger={mapPx} />
-          <MapController flyCoords={flyCoords} panCoords={panCoords} />
-          {filtered.map(r => (
-            <Marker
-              key={r.id}
-              position={[r.lat!, r.lng!]}
-              icon={createMarkerIcon(r.avg_score, highlighted === r.id)}
-              eventHandlers={{ click: () => tap(r) }}
-            >
-              <Popup className="clean-popup">
-                <Link to={`/restaurant/${r.id}`} className="block no-underline">
-                  <div style={{ minWidth: 188, padding: '2px 0' }}>
-                    <p style={{ fontWeight: 700, fontSize: 13, color: '#111110', margin: '0 0 2px', lineHeight: 1.3 }}>{r.name}</p>
-                    {r.neighborhood && <p style={{ fontSize: 11, color: '#9B9894', margin: '0 0 5px' }}>{r.neighborhood}</p>}
-                    <span style={{ fontSize: 17, fontWeight: 700, color: r.avg_score > 0 ? scoreColor(r.avg_score) : '#D5D3CE', fontFamily: 'Georgia,serif' }}>
-                      {r.avg_score > 0 ? r.avg_score.toFixed(1) : '—'}
-                    </span>
-                    {r.avg_score > 0 && <span style={{ fontSize: 11, color: '#9B9894', marginLeft: 6 }}>{scoreLabel(r.avg_score)}</span>}
-                  </div>
-                </Link>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+      {/* Map container — overflow visible so the controls button can't be clipped */}
+      <div style={{
+        height: mapH,
+        flexShrink: 0,
+        position: 'relative',
+        transition: 'height 0.3s cubic-bezier(0.4,0,0.2,1)',
+      }}>
+        {/* Leaflet needs a separate overflow:hidden wrapper so tiles clip correctly */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <MapContainer
+            center={[48.1351, 11.582]}
+            zoom={13}
+            style={{ width: '100%', height: '100%' }}
+            zoomControl={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={19}
+            />
+            <MapInvalidator trigger={`${mapH}-${fullscreen}`} />
+            <MapController flyCoords={flyCoords} panCoords={panCoords} />
+            {filtered.map(r => (
+              <Marker
+                key={r.id}
+                position={[r.lat!, r.lng!]}
+                icon={createMarkerIcon(r.avg_score, highlighted === r.id)}
+                eventHandlers={{ click: () => tap(r) }}
+              >
+                <Popup className="clean-popup">
+                  <Link to={`/restaurant/${r.id}`} className="block no-underline">
+                    <div style={{ minWidth: 188, padding: '2px 0' }}>
+                      <p style={{ fontWeight: 700, fontSize: 13, color: '#111110', margin: '0 0 2px', lineHeight: 1.3 }}>{r.name}</p>
+                      {r.neighborhood && <p style={{ fontSize: 11, color: '#9B9894', margin: '0 0 5px' }}>{r.neighborhood}</p>}
+                      <span style={{ fontSize: 17, fontWeight: 700, color: r.avg_score > 0 ? scoreColor(r.avg_score) : '#D5D3CE', fontFamily: 'Georgia,serif' }}>
+                        {r.avg_score > 0 ? r.avg_score.toFixed(1) : '—'}
+                      </span>
+                      {r.avg_score > 0 && <span style={{ fontSize: 11, color: '#9B9894', marginLeft: 6 }}>{scoreLabel(r.avg_score)}</span>}
+                    </div>
+                  </Link>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
 
-        {/* Fullscreen toggle */}
+        {/* Controls — outside overflow:hidden, never get clipped */}
         <button
           onClick={() => setFullscreen(v => !v)}
-          style={{ position: 'absolute', top: 14, right: 14, zIndex: 10 }}
+          style={{ position: 'absolute', top: 14, right: 14, zIndex: 20 }}
           className="bg-white/90 backdrop-blur-sm border border-[#E8E6E0] shadow-md rounded-xl px-3 py-2 flex items-center gap-1.5"
         >
           {fullscreen ? <ListIcon /> : <ExpandIcon />}
           <span className="text-[11px] font-semibold text-[#6B6560]">{fullscreen ? 'Liste' : 'Vollbild'}</span>
         </button>
 
-        {/* Floating filters in fullscreen mode */}
         <AnimatePresence>
           {fullscreen && (
             <motion.div
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-              style={{ position: 'absolute', top: 14, left: 14, right: 88, zIndex: 10 }}
+              style={{ position: 'absolute', top: 14, left: 14, right: 88, zIndex: 20 }}
               className="flex gap-1.5 overflow-x-auto no-scrollbar"
             >
               {[null, ...foodTypes].map(t => (
@@ -201,16 +207,19 @@ export function MapPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
-      {/* ── List ────────────────────────────────────────── */}
-      <motion.div
-        animate={{ height: fullscreen ? 0 : listPx }}
-        transition={{ type: 'spring', stiffness: 340, damping: 36 }}
-        style={{ overflow: 'hidden', flexShrink: 0, background: 'white' }}
-      >
-        {/* Filter + count */}
-        <div className="px-4 pt-3 pb-2 border-b border-[#F0EEE8]">
+      {/* List */}
+      <div style={{
+        height: listH,
+        flexShrink: 0,
+        overflow: 'hidden',
+        background: 'white',
+        transition: 'height 0.3s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <div className="px-4 pt-3 pb-2 border-b border-[#F0EEE8] shrink-0">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-2">
             {[null, ...foodTypes].map(t => (
               <button key={t ?? 'alle'} onClick={() => setFoodFilter(t)}
@@ -225,11 +234,11 @@ export function MapPage() {
           </p>
         </div>
 
-        {/* Scrollable list */}
         <div
           ref={listRef}
           onScroll={handleScroll}
-          style={{ overflowY: 'auto', height: listPx - 72, WebkitOverflowScrolling: 'touch' }}
+          style={{ overflowY: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}
+          className="bg-white"
         >
           {sorted.map((r, i) => {
             const active = highlighted === r.id
@@ -268,9 +277,8 @@ export function MapPage() {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* White fill behind nav so no ugly gap */}
       <div style={{ flex: 1, background: fullscreen ? 'transparent' : 'white' }} />
     </div>
   )
