@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { unlock, setName } from '../lib/auth'
+import { unlock, setName, enterAsGuest } from '../lib/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 
@@ -86,6 +86,13 @@ export function AuthPage() {
               <Button variant="primary" size="lg" type="submit" className="w-full">
                 Weiter →
               </Button>
+              <button
+                type="button"
+                onClick={() => { enterAsGuest(); nav('/') }}
+                className="w-full text-sm text-[#9B9894] hover:text-[#6B6560] transition-colors py-2"
+              >
+                Nur anschauen →
+              </button>
             </motion.form>
           ) : (
             <motion.form
@@ -126,7 +133,11 @@ export function AuthPage() {
       </motion.div>
 
       {/* Footer */}
-      <p className="text-xs text-[#C0BEB8] mt-12">© 2025 A/B Testing</p>
+      <div className="mt-12 flex items-center gap-4">
+        <p className="text-xs text-[#C0BEB8]">© 2026 A/B Testing</p>
+        <Link to="/impressum" className="text-xs text-[#C0BEB8] hover:text-[#9B9894] transition-colors">Impressum</Link>
+        <Link to="/datenschutz" className="text-xs text-[#C0BEB8] hover:text-[#9B9894] transition-colors">Datenschutz</Link>
+      </div>
     </div>
   )
 }

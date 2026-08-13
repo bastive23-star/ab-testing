@@ -1,6 +1,7 @@
 import { Outlet, useLocation, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Nav } from './Nav'
+import { isMember } from '../../lib/auth'
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -25,8 +26,8 @@ export function Layout() {
           <Outlet />
         </motion.main>
       </AnimatePresence>
-      {/* FAB — bottom right, always visible */}
-      <NavLink
+      {/* FAB — only for members */}
+      {isMember() && <NavLink
         to="/add"
         aria-label="Restaurant hinzufügen"
         className="fixed bottom-24 right-4 z-40"
@@ -38,7 +39,7 @@ export function Layout() {
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </motion.div>
-      </NavLink>
+      </NavLink>}
 
       <Nav />
     </div>

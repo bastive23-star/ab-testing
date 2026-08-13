@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { scoreColor } from '../lib/scoring'
 import { formatDate } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
+import { isMember } from '../lib/auth'
 
 export function RestaurantPage() {
   const { id } = useParams<{ id: string }>()
@@ -56,14 +57,16 @@ export function RestaurantPage() {
         >
           <ChevronLeft />
         </button>
-        {/* Edit */}
-        <button
-          onClick={() => nav(`/restaurant/${restaurant.id}/edit`)}
-          className="absolute top-12 right-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full p-2.5"
-          aria-label="Bearbeiten"
-        >
-          <PencilIcon />
-        </button>
+        {/* Edit — members only */}
+        {isMember() && (
+          <button
+            onClick={() => nav(`/restaurant/${restaurant.id}/edit`)}
+            className="absolute top-12 right-4 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full p-2.5"
+            aria-label="Bearbeiten"
+          >
+            <PencilIcon />
+          </button>
+        )}
         {/* Score overlay */}
         <div className="absolute bottom-4 right-4 text-right">
           {avgScore > 0 && (
@@ -129,15 +132,24 @@ export function RestaurantPage() {
 
           {/* Review CTA */}
           <div className="px-3 pb-3">
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={() => nav(`/review/${restaurant.id}`)}
-              disabled={!name}
-            >
-              {hasReviewed ? 'Bewertung bearbeiten' : 'Jetzt bewerten'}
-            </Button>
+            {isMember() ? (
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                onClick={() => nav(`/review/${restaurant.id}`)}
+                disabled={!name}
+              >
+                {hasReviewed ? 'Bewertung bearbeiten' : 'Jetzt bewerten'}
+              </Button>
+            ) : (
+              <button
+                onClick={() => nav('/auth')}
+                className="w-full py-3 text-sm text-[#9B9894] hover:text-[#C8302A] transition-colors"
+              >
+                Mitmachen? → Anmelden
+              </button>
+            )}
           </div>
         </GlassCard>
 

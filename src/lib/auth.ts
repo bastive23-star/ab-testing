@@ -2,13 +2,25 @@ const PASSWORD = 'banhmi26'
 const PW_KEY   = 'bmPw'
 const NAME_KEY = 'bmName'
 
-export function isUnlocked(): boolean {
-  return localStorage.getItem(PW_KEY) === PASSWORD
+export type Role = 'none' | 'guest' | 'member'
+
+export function getRole(): Role {
+  const v = localStorage.getItem(PW_KEY)
+  if (v === PASSWORD) return 'member'
+  if (v === 'guest') return 'guest'
+  return 'none'
 }
+
+export function isUnlocked(): boolean { return getRole() !== 'none' }
+export function isMember(): boolean { return getRole() === 'member' }
 
 export function unlock(pw: string): boolean {
   if (pw === PASSWORD) { localStorage.setItem(PW_KEY, pw); return true }
   return false
+}
+
+export function enterAsGuest(): void {
+  localStorage.setItem(PW_KEY, 'guest')
 }
 
 export function lock(): void {
