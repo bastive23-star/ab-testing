@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { fetchRestaurantsWithStats, fetchAllReviews, fetchCategories } from '../lib/queries'
 import { scoreColor, calcTotal } from '../lib/scoring'
 import { cn } from '../lib/utils'
@@ -225,6 +225,13 @@ export function RankingPage() {
           ))}
         </div>
       )}
+
+      {/* Legal footer */}
+      <div className="flex items-center gap-4 mt-12 pb-2">
+        <span className="text-[10px] text-[#C0BEB8]">© 2026 A/B Testing</span>
+        <NavLink to="/impressum" className="text-[10px] text-[#C0BEB8] hover:text-[#9B9894] transition-colors">Impressum</NavLink>
+        <NavLink to="/datenschutz" className="text-[10px] text-[#C0BEB8] hover:text-[#9B9894] transition-colors">Datenschutz</NavLink>
+      </div>
     </div>
   )
 }

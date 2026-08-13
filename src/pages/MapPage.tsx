@@ -27,11 +27,13 @@ function createMarkerIcon(score: number, highlighted = false) {
     <text x="24" y="25" text-anchor="middle" font-size="${fs}" font-weight="700"
       font-family="Inter,system-ui,sans-serif" fill="${color}">${score > 0 ? score.toFixed(1) : '–'}</text>
   </svg>`
+  // Anchor at the centre of the score circle (cy=21 in a 58-tall viewBox)
+  const circleY = Math.round(size * 1.2 * 21 / 58)
   return L.divIcon({
     html: svg, className: '',
     iconSize: [size, Math.round(size * 1.2)],
-    iconAnchor: [size / 2, Math.round(size * 1.2)],
-    popupAnchor: [0, -Math.round(size * 1.2) - 4],
+    iconAnchor: [size / 2, circleY],
+    popupAnchor: [0, -circleY - 4],
   })
 }
 
