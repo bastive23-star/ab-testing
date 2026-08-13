@@ -51,13 +51,14 @@ function MapController({ flyCoords, panCoords }: {
 }) {
   const map = useMap()
   useEffect(() => {
-    if (flyCoords) map.flyTo(flyCoords, 16, { duration: 0.7 })
+    if (flyCoords) map.flyTo(flyCoords, 16, { duration: 0.7, animate: true })
   }, [flyCoords]) // eslint-disable-line
   useEffect(() => {
-    if (panCoords) map.panTo(panCoords, { animate: true, duration: 0.4 })
+    if (panCoords) map.setView(panCoords, map.getZoom(), { animate: true, duration: 0.4 })
   }, [panCoords]) // eslint-disable-line
   return null
 }
+
 
 export function MapPage() {
   const { data: restaurants = [] } = useQuery({

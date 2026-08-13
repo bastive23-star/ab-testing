@@ -38,7 +38,11 @@ export function RankingPage() {
       list = list.map(r => {
         const rReviews = allReviews.filter(rev => rev.restaurant_id === r.id)
         if (rReviews.length === 0) return r
-        const scores = rReviews.map(rev => calcTotal(rev.scores, catsNoAmbiente))
+        // Only use cats the reviewer actually scored — prevents unscored cats from dragging to 0
+        const scores = rReviews.map(rev => {
+          const scoredCats = catsNoAmbiente.filter(c => rev.scores[c.id] !== undefined)
+          return calcTotal(rev.scores, scoredCats)
+        })
         const avg = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
         return { ...r, avg_score: avg }
       }).sort((a, b) => b.avg_score - a.avg_score)
@@ -51,7 +55,10 @@ export function RankingPage() {
       const myScoreMap: Record<string, number> = {}
       if (toGo && allCats.length > 0) {
         const catsNoAmbiente = allCats.filter(c => c.name !== 'Ambiente')
-        for (const rev of myReviews) myScoreMap[rev.restaurant_id] = calcTotal(rev.scores, catsNoAmbiente)
+        for (const rev of myReviews) {
+          const scoredCats = catsNoAmbiente.filter(c => rev.scores[c.id] !== undefined)
+          myScoreMap[rev.restaurant_id] = calcTotal(rev.scores, scoredCats)
+        }
       } else {
         for (const rev of myReviews) myScoreMap[rev.restaurant_id] = rev.total_score
       }
@@ -92,6 +99,17 @@ export function RankingPage() {
           <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9B9894]">
             {restaurantList.length} im Ranking
           </span>
+          <button
+            onClick={() => setToGo(v => !v)}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all border',
+              toGo
+                ? 'bg-[#111110] text-white border-[#111110]'
+                : 'bg-transparent text-[#9B9894] border-[#D5D3CE] hover:border-[#9B9894]'
+            )}
+          >
+            🥡 To Go
+          </button>
         </div>
       </motion.div>
 
@@ -120,10 +138,6 @@ export function RankingPage() {
           </FilterRow>
         )}
 
-        <FilterRow label="Modus">
-          <Chip active={!toGo} onClick={() => setToGo(false)}>Dine In</Chip>
-          <Chip active={toGo} onClick={() => setToGo(true)}>To Go</Chip>
-        </FilterRow>
       </motion.div>
 
       {/* List */}
